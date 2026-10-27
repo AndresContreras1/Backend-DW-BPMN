@@ -1,0 +1,1535 @@
+{
+	"info": {
+		"name": "Facimus Procesos — Flujo de pruebas HU",
+		"description": "Simula un flujo real completo que recorre las 28 historias de usuario.\n\nCada request extrae datos (IDs, tokens) y los pasa a las siguientes mediante variables de coleccion. Ejecutar con el **Collection Runner** en orden secuencial.\n\n**Prerequisito:** la aplicacion debe estar corriendo en localhost:8080.\n\n**Escenario:** Una empresa se registra, su admin configura usuarios y roles, diseña un proceso BPMN con pools, lanes, actividades, gateways, arcos y mensajes inter-pool, lo publica, y se verifican los permisos de acceso por rol.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [{"key": "token", "value": "{{token}}"}]
+	},
+	"variable": [
+		{"key": "baseUrl", "value": "http://localhost:8080"},
+		{"key": "token", "value": ""},
+		{"key": "runId", "value": ""},
+		{"key": "adminEmail", "value": ""},
+		{"key": "adminPassword", "value": "Admin123!"},
+		{"key": "editorEmail", "value": ""},
+		{"key": "editorPassword", "value": "Editor123!"},
+		{"key": "lectorEmail", "value": ""},
+		{"key": "lectorPassword", "value": "Lector123!"},
+		{"key": "nit", "value": ""},
+		{"key": "procesoId", "value": ""},
+		{"key": "pool1Id", "value": ""},
+		{"key": "pool2Id", "value": ""},
+		{"key": "rolAnalistaId", "value": ""},
+		{"key": "rolGerenteId", "value": ""},
+		{"key": "rolTempId", "value": ""},
+		{"key": "lane1Id", "value": ""},
+		{"key": "lane2Id", "value": ""},
+		{"key": "lane3Id", "value": ""},
+		{"key": "act1Id", "value": ""},
+		{"key": "act2Id", "value": ""},
+		{"key": "act3Id", "value": ""},
+		{"key": "gatewayId", "value": ""},
+		{"key": "gatewayParaleloId", "value": ""},
+		{"key": "arco1Id", "value": ""},
+		{"key": "arco2Id", "value": ""},
+		{"key": "arco3Id", "value": ""},
+		{"key": "eventoThrow1Id", "value": ""},
+		{"key": "eventoThrow2Id", "value": ""},
+		{"key": "mensaje1Id", "value": ""},
+		{"key": "mensaje2Id", "value": ""},
+		{"key": "editorId", "value": ""},
+		{"key": "lectorId", "value": ""}
+	],
+	"item": [
+		{
+			"name": "01 — Registro de empresa (HU-01)",
+			"item": [
+				{
+					"name": "Registrar empresa nueva",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const id = Date.now().toString().slice(-10) + Math.floor(Math.random() * 100).toString().padStart(2, '0');",
+									"pm.collectionVariables.set('runId', id);",
+									"pm.collectionVariables.set('nit', 'TEST' + id + '-1');",
+									"pm.collectionVariables.set('adminEmail', 'admin.' + id + '@test.com');",
+									"pm.collectionVariables.set('editorEmail', 'editor.' + id + '@test.com');",
+									"pm.collectionVariables.set('lectorEmail', 'lector.' + id + '@test.com');"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Empresa creada (201)', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('Tiene ID', () => pm.expect(json.id).to.be.a('number'));",
+									"pm.test('NIT generado correctamente', () => pm.expect(json.nit).to.eql(pm.collectionVariables.get('nit')));",
+									"pm.test('Tiene fecha de registro', () => pm.expect(json.fechaRegistro).to.be.a('string'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {"type": "noauth"},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombreEmpresa\": \"QA Lab {{runId}}\",\n  \"nit\": \"{{nit}}\",\n  \"correoContacto\": \"contacto.{{runId}}@test.com\",\n  \"nombreAdmin\": \"Admin Pruebas\",\n  \"emailAdmin\": \"{{adminEmail}}\",\n  \"passwordAdmin\": \"{{adminPassword}}\"\n}"
+						},
+						"url": "{{baseUrl}}/api/v1/empresas"
+					}
+				},
+				{
+					"name": "Registrar con NIT duplicado falla",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('NIT duplicado rechazado (409 o 400)', () => {",
+								"  pm.expect(pm.response.code).to.be.oneOf([400, 409]);",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"auth": {"type": "noauth"},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombreEmpresa\": \"Duplicada\",\n  \"nit\": \"{{nit}}\",\n  \"correoContacto\": \"dup@test.com\",\n  \"nombreAdmin\": \"Admin\",\n  \"emailAdmin\": \"dup@test.com\",\n  \"passwordAdmin\": \"Test123!\"\n}"
+						},
+						"url": "{{baseUrl}}/api/v1/empresas"
+					}
+				}
+			]
+		},
+		{
+			"name": "02 — Autenticacion (HU-03)",
+			"item": [
+				{
+					"name": "Login con credenciales correctas",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Login exitoso (200)', () => pm.response.to.have.status(200));",
+								"const json = pm.response.json();",
+								"pm.test('Retorna accessToken', () => pm.expect(json.accessToken).to.be.a('string'));",
+								"pm.test('Token type es Bearer', () => pm.expect(json.tokenType).to.eql('Bearer'));",
+								"pm.collectionVariables.set('token', json.accessToken);"
+							]
+						}
+					}],
+					"request": {
+						"auth": {"type": "noauth"},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+						},
+						"url": "{{baseUrl}}/api/v1/auth/login"
+					}
+				},
+				{
+					"name": "Login con clave incorrecta falla",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Clave incorrecta (401)', () => pm.response.to.have.status(401));"
+							]
+						}
+					}],
+					"request": {
+						"auth": {"type": "noauth"},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"clave-mala\"\n}"
+						},
+						"url": "{{baseUrl}}/api/v1/auth/login"
+					}
+				},
+				{
+					"name": "Endpoint protegido sin token falla",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Sin token (401)', () => pm.response.to.have.status(401));",
+								"pm.test('ProblemDetail con titulo', () => {",
+								"  pm.expect(pm.response.json().title).to.eql('No autenticado');",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"auth": {"type": "noauth"},
+						"method": "GET",
+						"url": "{{baseUrl}}/api/v1/procesos"
+					}
+				}
+			]
+		},
+		{
+			"name": "03 — Gestion de usuarios (HU-02)",
+			"item": [
+				{
+					"name": "Crear usuario editor",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Usuario creado (201)', () => pm.response.to.have.status(201));",
+								"const json = pm.response.json();",
+								"pm.test('Rol es EDITOR', () => pm.expect(json.rolAcceso).to.eql('EDITOR'));",
+								"pm.collectionVariables.set('editorId', json.id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Editor Pruebas\",\n  \"email\": \"{{editorEmail}}\",\n  \"password\": \"{{editorPassword}}\",\n  \"rolAcceso\": \"EDITOR\"\n}"
+						},
+						"url": "{{baseUrl}}/api/v1/usuarios"
+					}
+				},
+				{
+					"name": "Crear usuario solo lectura",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Usuario creado (201)', () => pm.response.to.have.status(201));",
+								"const json = pm.response.json();",
+								"pm.test('Rol es SOLO_LECTURA', () => pm.expect(json.rolAcceso).to.eql('SOLO_LECTURA'));",
+								"pm.collectionVariables.set('lectorId', json.id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Lector Pruebas\",\n  \"email\": \"{{lectorEmail}}\",\n  \"password\": \"{{lectorPassword}}\",\n  \"rolAcceso\": \"SOLO_LECTURA\"\n}"
+						},
+						"url": "{{baseUrl}}/api/v1/usuarios"
+					}
+				},
+				{
+					"name": "Listar usuarios de la empresa",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Al menos 3 usuarios', () => {",
+								"  pm.expect(pm.response.json().length).to.be.at.least(3);",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/api/v1/usuarios"
+					}
+				},
+				{
+					"name": "Obtener detalle de usuario editor",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Email correcto', () => {",
+								"  pm.expect(pm.response.json().email).to.eql(pm.collectionVariables.get('editorEmail'));",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/api/v1/usuarios/{{editorId}}"
+					}
+				},
+				{
+					"name": "Desactivar usuario lector",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Usuario desactivado', () => {",
+								"  pm.expect(pm.response.json().activo).to.be.false;",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "PATCH",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"activo\": false}"
+						},
+						"url": "{{baseUrl}}/api/v1/usuarios/{{lectorId}}"
+					}
+				},
+				{
+					"name": "Reactivar usuario lector",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Usuario reactivado', () => {",
+								"  pm.expect(pm.response.json().activo).to.be.true;",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "PATCH",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"activo\": true}"
+						},
+						"url": "{{baseUrl}}/api/v1/usuarios/{{lectorId}}"
+					}
+				}
+			]
+		},
+		{
+			"name": "04 — Roles de proceso (HU-17 a HU-20)",
+			"item": [
+				{
+					"name": "Crear rol Analista",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Rol creado (201)', () => pm.response.to.have.status(201));",
+								"pm.collectionVariables.set('rolAnalistaId', pm.response.json().id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Analista\", \"descripcion\": \"Analiza y recibe solicitudes\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/roles"
+					}
+				},
+				{
+					"name": "Crear rol Gerente",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Rol creado (201)', () => pm.response.to.have.status(201));",
+								"pm.collectionVariables.set('rolGerenteId', pm.response.json().id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Gerente\", \"descripcion\": \"Aprueba o rechaza solicitudes\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/roles"
+					}
+				},
+				{
+					"name": "Crear rol Temporal (para eliminar despues)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Rol creado (201)', () => pm.response.to.have.status(201));",
+								"pm.collectionVariables.set('rolTempId', pm.response.json().id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Temporal\", \"descripcion\": \"Rol de prueba para eliminar\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/roles"
+					}
+				},
+				{
+					"name": "Listar roles",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Al menos 3 roles', () => {",
+								"  pm.expect(pm.response.json().length).to.be.at.least(3);",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/api/v1/roles"
+					}
+				},
+				{
+					"name": "Editar rol Temporal",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Nombre actualizado', () => {",
+								"  pm.expect(pm.response.json().nombre).to.eql('Temporal Editado');",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Temporal Editado\", \"descripcion\": \"Editado antes de eliminar\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/roles/{{rolTempId}}"
+					}
+				},
+				{
+					"name": "Eliminar rol sin uso",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Eliminado (204)', () => pm.response.to.have.status(204));"
+							]
+						}
+					}],
+					"request": {
+						"method": "DELETE",
+						"url": "{{baseUrl}}/api/v1/roles/{{rolTempId}}"
+					}
+				}
+			]
+		},
+		{
+			"name": "05 — Crear y editar proceso (HU-04, HU-05, HU-07)",
+			"item": [
+				{
+					"name": "Crear proceso Solicitud de Vacaciones",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Proceso creado (201)', () => pm.response.to.have.status(201));",
+								"const json = pm.response.json();",
+								"pm.test('Estado inicial BORRADOR', () => pm.expect(json.estado).to.eql('BORRADOR'));",
+								"pm.collectionVariables.set('procesoId', json.id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Solicitud de Vacaciones\", \"descripcion\": \"Proceso para gestionar solicitudes de vacaciones del personal\", \"categoria\": \"Talento Humano\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/procesos"
+					}
+				},
+				{
+					"name": "Listar procesos",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Tiene contenido paginado', () => {",
+								"  pm.expect(pm.response.json().content).to.be.an('array');",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/api/v1/procesos"
+					}
+				},
+				{
+					"name": "Buscar por nombre",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Resultado contiene el proceso', () => {",
+								"  const items = pm.response.json().content;",
+								"  pm.expect(items.some(p => p.nombre.includes('Vacaciones'))).to.be.true;",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/api/v1/procesos?nombre=Vacaciones"
+					}
+				},
+				{
+					"name": "Obtener detalle del proceso",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Tiene proceso e historial', () => {",
+								"  const json = pm.response.json();",
+								"  pm.expect(json.proceso).to.be.an('object');",
+								"  pm.expect(json.historial).to.be.an('array');",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/api/v1/procesos/{{procesoId}}"
+					}
+				},
+				{
+					"name": "Editar proceso",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Descripcion actualizada', () => {",
+								"  pm.expect(pm.response.json().descripcion).to.include('actualizado');",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Solicitud de Vacaciones\", \"descripcion\": \"Proceso actualizado - gestiona vacaciones del personal\", \"categoria\": \"Talento Humano\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/procesos/{{procesoId}}"
+					}
+				},
+				{
+					"name": "Ver historial de cambios",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Historial tiene al menos 1 entrada', () => {",
+								"  pm.expect(pm.response.json().length).to.be.at.least(1);",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/historial"
+					}
+				}
+			]
+		},
+		{
+			"name": "06 — Pools (HU-21)",
+			"item": [
+				{
+					"name": "Listar pools (obtener el auto-creado)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"const pools = pm.response.json();",
+								"pm.test('Pool auto-creado existe', () => pm.expect(pools.length).to.be.at.least(1));",
+								"pm.collectionVariables.set('pool1Id', pools[0].id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/pools"
+					}
+				},
+				{
+					"name": "Crear pool externo (Sistema RRHH)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Pool creado (201)', () => pm.response.to.have.status(201));",
+								"const json = pm.response.json();",
+								"pm.test('Es caja negra', () => pm.expect(json.cajaNegra).to.be.true);",
+								"pm.collectionVariables.set('pool2Id', json.id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Sistema RRHH\", \"tipoParticipante\": \"SISTEMA_EXTERNO\", \"cajaNegra\": true}"
+						},
+						"url": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/pools"
+					}
+				},
+				{
+					"name": "Editar pool principal",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Nombre actualizado', () => {",
+								"  pm.expect(pm.response.json().nombre).to.eql('Departamento de RRHH');",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Departamento de RRHH\", \"tipoParticipante\": \"EMPRESA\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/pools/{{pool1Id}}"
+					}
+				}
+			]
+		},
+		{
+			"name": "07 — Lanes (HU-22, HU-24)",
+			"item": [
+				{
+					"name": "Crear lane Recepcion (pool 1)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Lane creada (201)', () => pm.response.to.have.status(201));",
+								"pm.collectionVariables.set('lane1Id', pm.response.json().id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Recepcion\", \"rolProcesoId\": {{rolAnalistaId}}}"
+						},
+						"url": "{{baseUrl}}/api/v1/pools/{{pool1Id}}/lanes"
+					}
+				},
+				{
+					"name": "Crear lane Aprobacion (pool 1)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Lane creada (201)', () => pm.response.to.have.status(201));",
+								"pm.collectionVariables.set('lane2Id', pm.response.json().id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Aprobacion\", \"rolProcesoId\": {{rolGerenteId}}}"
+						},
+						"url": "{{baseUrl}}/api/v1/pools/{{pool1Id}}/lanes"
+					}
+				},
+				{
+					"name": "Crear lane en pool externo",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Pool caja negra rechaza lane (409)', () => pm.response.to.have.status(409));"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Procesamiento\", \"rolProcesoId\": {{rolAnalistaId}}}"
+						},
+						"url": "{{baseUrl}}/api/v1/pools/{{pool2Id}}/lanes"
+					}
+				},
+				{
+					"name": "Listar lanes del pool 1",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Tiene 2 lanes', () => pm.expect(pm.response.json().length).to.eql(2));"
+							]
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/api/v1/pools/{{pool1Id}}/lanes"
+					}
+				},
+				{
+					"name": "Editar lane Recepcion",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Nombre actualizado', () => {",
+								"  pm.expect(pm.response.json().nombre).to.eql('Recepcion de Solicitudes');",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Recepcion de Solicitudes\", \"rolProcesoId\": {{rolAnalistaId}}}"
+						},
+						"url": "{{baseUrl}}/api/v1/lanes/{{lane1Id}}"
+					}
+				},
+				{
+					"name": "Reordenar lanes (HU-22 PATCH)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"const lanes = pm.response.json();",
+								"pm.test('Orden cambiado', () => pm.expect(lanes[0].id).to.eql(Number(pm.collectionVariables.get('lane2Id'))));"
+							]
+						}
+					}],
+					"request": {
+						"method": "PATCH",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"laneIds\": [{{lane2Id}}, {{lane1Id}}]}"
+						},
+						"url": "{{baseUrl}}/api/v1/pools/{{pool1Id}}/lanes/orden"
+					}
+				}
+			]
+		},
+		{
+			"name": "08 — Actividades (HU-08 a HU-10)",
+			"item": [
+				{
+					"name": "Crear actividad Recibir solicitud",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Actividad creada (201)', () => pm.response.to.have.status(201));",
+								"pm.collectionVariables.set('act1Id', pm.response.json().id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Recibir solicitud\", \"descripcion\": \"Recepcion de la solicitud de vacaciones\", \"posicionX\": 100, \"posicionY\": 200}"
+						},
+						"url": "{{baseUrl}}/api/v1/lanes/{{lane1Id}}/actividades"
+					}
+				},
+				{
+					"name": "Crear actividad Aprobar solicitud",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Actividad creada (201)', () => pm.response.to.have.status(201));",
+								"pm.collectionVariables.set('act2Id', pm.response.json().id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Aprobar solicitud\", \"descripcion\": \"Aprobacion por parte del gerente\", \"posicionX\": 400, \"posicionY\": 100}"
+						},
+						"url": "{{baseUrl}}/api/v1/lanes/{{lane2Id}}/actividades"
+					}
+				},
+				{
+					"name": "Crear actividad Rechazar solicitud",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Actividad creada (201)', () => pm.response.to.have.status(201));",
+								"pm.collectionVariables.set('act3Id', pm.response.json().id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Rechazar solicitud\", \"descripcion\": \"Rechazo con justificacion\", \"posicionX\": 400, \"posicionY\": 300}"
+						},
+						"url": "{{baseUrl}}/api/v1/lanes/{{lane2Id}}/actividades"
+					}
+				},
+				{
+					"name": "Listar actividades del lane 1",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Tiene actividades', () => pm.expect(pm.response.json().length).to.be.at.least(1));"
+							]
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/api/v1/lanes/{{lane1Id}}/actividades"
+					}
+				},
+				{
+					"name": "Editar actividad (cambiar posicion)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Posicion actualizada', () => {",
+								"  pm.expect(pm.response.json().posicionX).to.eql(150);",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Recibir solicitud\", \"descripcion\": \"Recepcion de la solicitud de vacaciones\", \"posicionX\": 150, \"posicionY\": 200}"
+						},
+						"url": "{{baseUrl}}/api/v1/actividades/{{act1Id}}"
+					}
+				}
+			]
+		},
+		{
+			"name": "09 — Gateways (HU-14 a HU-16)",
+			"item": [
+				{
+					"name": "Crear gateway EXCLUSIVO",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Gateway creado (201)', () => pm.response.to.have.status(201));",
+								"const json = pm.response.json();",
+								"pm.test('Tipo EXCLUSIVO', () => pm.expect(json.tipoGateway).to.eql('EXCLUSIVO'));",
+								"pm.collectionVariables.set('gatewayId', json.id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Verificar dias disponibles\", \"tipoGateway\": \"EXCLUSIVO\", \"posicionX\": 250, \"posicionY\": 200}"
+						},
+						"url": "{{baseUrl}}/api/v1/lanes/{{lane1Id}}/gateways"
+					}
+				},
+				{
+					"name": "Crear gateway PARALELO (para eliminar)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Gateway creado (201)', () => pm.response.to.have.status(201));",
+								"pm.collectionVariables.set('gatewayParaleloId', pm.response.json().id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Notificaciones paralelas\", \"tipoGateway\": \"PARALELO\", \"posicionX\": 500, \"posicionY\": 200}"
+						},
+						"url": "{{baseUrl}}/api/v1/lanes/{{lane1Id}}/gateways"
+					}
+				},
+				{
+					"name": "Editar gateway (cambiar posicion)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));"
+							]
+						}
+					}],
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Verificar dias disponibles\", \"tipoGateway\": \"EXCLUSIVO\", \"posicionX\": 260, \"posicionY\": 200}"
+						},
+						"url": "{{baseUrl}}/api/v1/gateways/{{gatewayId}}"
+					}
+				},
+				{
+					"name": "Eliminar gateway PARALELO",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Eliminado (204)', () => pm.response.to.have.status(204));"
+							]
+						}
+					}],
+					"request": {
+						"method": "DELETE",
+						"url": "{{baseUrl}}/api/v1/gateways/{{gatewayParaleloId}}"
+					}
+				}
+			]
+		},
+		{
+			"name": "10 — Arcos (HU-11 a HU-13)",
+			"item": [
+				{
+					"name": "Crear arco: Recibir → Gateway",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Arco creado (201)', () => pm.response.to.have.status(201));",
+								"pm.collectionVariables.set('arco1Id', pm.response.json().id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"origenId\": {{act1Id}}, \"destinoId\": {{gatewayId}}, \"etiqueta\": \"solicitud recibida\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/arcos"
+					}
+				},
+				{
+					"name": "Crear arco: Gateway → Aprobar (con condicion)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Arco creado (201)', () => pm.response.to.have.status(201));",
+								"pm.test('Condicion asignada', () => pm.expect(pm.response.json().condicion).to.eql('dias <= saldo'));",
+								"pm.collectionVariables.set('arco2Id', pm.response.json().id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"origenId\": {{gatewayId}}, \"destinoId\": {{act2Id}}, \"etiqueta\": \"aprobado\", \"condicion\": \"dias <= saldo\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/arcos"
+					}
+				},
+				{
+					"name": "Crear arco: Gateway → Rechazar (con condicion)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Arco creado (201)', () => pm.response.to.have.status(201));",
+								"pm.collectionVariables.set('arco3Id', pm.response.json().id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"origenId\": {{gatewayId}}, \"destinoId\": {{act3Id}}, \"etiqueta\": \"rechazado\", \"condicion\": \"dias > saldo\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/arcos"
+					}
+				},
+				{
+					"name": "Crear arco sin condicion desde gateway falla",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Rechazado (400, 409 o 422)', () => {",
+								"  pm.expect(pm.response.code).to.be.oneOf([400, 409, 422]);",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"origenId\": {{gatewayId}}, \"destinoId\": {{act2Id}}, \"etiqueta\": \"sin condicion\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/arcos"
+					}
+				},
+				{
+					"name": "Listar arcos del pool",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Tiene 3 arcos', () => pm.expect(pm.response.json().length).to.eql(3));"
+							]
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/api/v1/pools/{{pool1Id}}/arcos"
+					}
+				},
+				{
+					"name": "Editar arco (cambiar etiqueta)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Etiqueta actualizada', () => {",
+								"  pm.expect(pm.response.json().etiqueta).to.eql('solicitud verificada');",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"etiqueta\": \"solicitud verificada\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/arcos/{{arco1Id}}"
+					}
+				}
+			]
+		},
+		{
+			"name": "11 — Mensajes inter-pool (HU-25 a HU-27)",
+			"item": [
+				{
+					"name": "Crear EventoMensaje THROW en lane 1",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Evento creado (201)', () => pm.response.to.have.status(201));",
+								"pm.collectionVariables.set('eventoThrow1Id', pm.response.json().id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Notificar aprobacion a RRHH\", \"tipoEvento\": \"THROW\", \"contenido\": \"Solicitud de vacaciones aprobada\", \"claveCorrelacion\": \"idSolicitud\", \"posicionX\": 400, \"posicionY\": 100, \"origenExterno\": false}"
+						},
+						"url": "{{baseUrl}}/api/v1/lanes/{{lane1Id}}/eventos-mensaje"
+					}
+				},
+				{
+					"name": "Crear EventoMensaje THROW en lane 2",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Evento creado (201)', () => pm.response.to.have.status(201));",
+								"pm.collectionVariables.set('eventoThrow2Id', pm.response.json().id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Registrar resultado en RRHH\", \"tipoEvento\": \"THROW\", \"contenido\": \"Resultado del proceso de vacaciones\", \"claveCorrelacion\": \"idResultado\", \"posicionX\": 400, \"posicionY\": 200, \"origenExterno\": false}"
+						},
+						"url": "{{baseUrl}}/api/v1/lanes/{{lane2Id}}/eventos-mensaje"
+					}
+				},
+				{
+					"name": "Crear mensaje (pool1 → pool2 externo)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Mensaje creado (201)', () => pm.response.to.have.status(201));",
+								"pm.collectionVariables.set('mensaje1Id', pm.response.json().id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Notificar aprobacion a RRHH\", \"contenido\": \"Solicitud de vacaciones aprobada\", \"poolOrigenId\": {{pool1Id}}, \"poolDestinoId\": {{pool2Id}}, \"eventoThrowId\": {{eventoThrow1Id}}, \"claveCorrelacion\": \"idSolicitud\", \"tipoDestinoExterno\": \"SERVICIO_WEB\", \"destinoExterno\": \"https://rrhh.example.com/api/notificaciones\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/mensajes"
+					}
+				},
+				{
+					"name": "Crear segundo mensaje (pool1 → pool2 externo)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Mensaje creado (201)', () => pm.response.to.have.status(201));",
+								"pm.collectionVariables.set('mensaje2Id', pm.response.json().id);"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Registrar resultado en RRHH\", \"contenido\": \"Resultado del proceso de vacaciones\", \"poolOrigenId\": {{pool1Id}}, \"poolDestinoId\": {{pool2Id}}, \"eventoThrowId\": {{eventoThrow2Id}}, \"claveCorrelacion\": \"idResultado\", \"tipoDestinoExterno\": \"CORREO\", \"destinoExterno\": \"rrhh@empresa.com\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/mensajes"
+					}
+				},
+				{
+					"name": "Listar mensajes del proceso",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Tiene 2 mensajes', () => pm.expect(pm.response.json().length).to.eql(2));"
+							]
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/mensajes"
+					}
+				},
+				{
+					"name": "Editar mensaje",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Contenido actualizado', () => {",
+								"  pm.expect(pm.response.json().contenido).to.include('actualizada');",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Notificar aprobacion a RRHH\", \"contenido\": \"Solicitud de vacaciones aprobada y actualizada\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/mensajes/{{mensaje1Id}}"
+					}
+				}
+			]
+		},
+		{
+			"name": "12 — Correlaciones (HU-28)",
+			"item": [
+				{
+					"name": "Actualizar correlacion del mensaje",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Correlacion actualizada (200)', () => pm.response.to.have.status(200));",
+								"pm.test('Criterio asignado', () => {",
+								"  pm.expect(pm.response.json().criterio).to.eql('empleadoId');",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"criterio\": \"empleadoId\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/mensajes/{{mensaje1Id}}/correlacion"
+					}
+				},
+				{
+					"name": "Obtener correlacion",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Criterio correcto', () => {",
+								"  pm.expect(pm.response.json().criterio).to.eql('empleadoId');",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/api/v1/mensajes/{{mensaje1Id}}/correlacion"
+					}
+				},
+				{
+					"name": "Eliminar correlacion",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Eliminada (204)', () => pm.response.to.have.status(204));"
+							]
+						}
+					}],
+					"request": {
+						"method": "DELETE",
+						"url": "{{baseUrl}}/api/v1/mensajes/{{mensaje1Id}}/correlacion"
+					}
+				},
+				{
+					"name": "Recrear correlacion para publicar",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Correlacion recreada (200)', () => pm.response.to.have.status(200));"
+							]
+						}
+					}],
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"criterio\": \"idSolicitud\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/mensajes/{{mensaje1Id}}/correlacion"
+					}
+				}
+			]
+		},
+		{
+			"name": "13 — Publicar proceso (HU-05)",
+			"item": [
+				{
+					"name": "Cambiar estado a PUBLICADO",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"pm.test('Estado es PUBLICADO', () => {",
+								"  pm.expect(pm.response.json().estado).to.eql('PUBLICADO');",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "PATCH",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"estado\": \"PUBLICADO\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/procesos/{{procesoId}}"
+					}
+				}
+			]
+		},
+		{
+			"name": "14 — Permisos por rol (HU-23, HU-24)",
+			"item": [
+				{
+					"name": "Login como SOLO_LECTURA",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Login exitoso (200)', () => pm.response.to.have.status(200));",
+								"pm.collectionVariables.set('token', pm.response.json().accessToken);"
+							]
+						}
+					}],
+					"request": {
+						"auth": {"type": "noauth"},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"email\": \"{{lectorEmail}}\", \"password\": \"{{lectorPassword}}\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/auth/login"
+					}
+				},
+				{
+					"name": "Lector puede consultar procesos",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Lectura permitida (200)', () => pm.response.to.have.status(200));"
+							]
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/api/v1/procesos"
+					}
+				},
+				{
+					"name": "Lector NO puede crear procesos",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Creacion denegada (403)', () => pm.response.to.have.status(403));"
+							]
+						}
+					}],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"nombre\": \"Proceso prohibido\", \"descripcion\": \"No deberia crearse\", \"categoria\": \"Test\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/procesos"
+					}
+				},
+				{
+					"name": "Re-login como admin",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Login exitoso (200)', () => pm.response.to.have.status(200));",
+								"pm.collectionVariables.set('token', pm.response.json().accessToken);"
+							]
+						}
+					}],
+					"request": {
+						"auth": {"type": "noauth"},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"email\": \"{{adminEmail}}\", \"password\": \"{{adminPassword}}\"}"
+						},
+						"url": "{{baseUrl}}/api/v1/auth/login"
+					}
+				}
+			]
+		},
+		{
+			"name": "15 — Eliminacion logica (HU-06)",
+			"item": [
+				{
+					"name": "Eliminar proceso (baja logica)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Eliminado (204)', () => pm.response.to.have.status(204));"
+							]
+						}
+					}],
+					"request": {
+						"method": "DELETE",
+						"url": "{{baseUrl}}/api/v1/procesos/{{procesoId}}"
+					}
+				},
+				{
+					"name": "Proceso ya no aparece en lista activos",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"const items = pm.response.json().content;",
+								"pm.test('Proceso eliminado no aparece', () => {",
+								"  const found = items.find(p => p.id === Number(pm.collectionVariables.get('procesoId')));",
+								"  pm.expect(found).to.be.undefined;",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/api/v1/procesos"
+					}
+				},
+				{
+					"name": "Proceso aparece con filtro activo=false",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"pm.test('Status 200', () => pm.response.to.have.status(200));",
+								"const items = pm.response.json().content;",
+								"pm.test('Proceso inactivo aparece', () => {",
+								"  const found = items.find(p => p.id === Number(pm.collectionVariables.get('procesoId')));",
+								"  pm.expect(found).to.not.be.undefined;",
+								"  pm.expect(found.activo).to.be.false;",
+								"});"
+							]
+						}
+					}],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/api/v1/procesos?activo=false"
+					}
+				}
+			]
+		}
+	]
+}

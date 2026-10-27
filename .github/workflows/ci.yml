@@ -1,0 +1,136 @@
+name: CI - Build and Test
+
+on:
+  push:
+    branches: [main, develop, entrega-1-backend]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build-and-test:
+    name: Build & Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build and verify
+        run: mvn -B clean verify
+
+      - name: Upload test results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Test Results (${{ matrix.os }})
+          path: target/surefire-reports/*.xml
+          reporter: java-junit
+          fail-on-error: false
+
+      - name: Upload JaCoCo coverage report
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+          retention-days: 7
+
+      - name: Verify JAR exists
+        shell: bash
+        run: ls -la target/*.jar
+
+  architecture-guard:
+    name: Architecture Rules
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run ArchUnit tests
+        run: mvn -B test -Dtest="com.facimus.procesos.arquitectura.**" -Dsurefire.failIfNoSpecifiedTests=false
+
+      - name: Architecture tests summary
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Architecture Rules
+          path: target/surefire-reports/*.xml
+          reporter: java-junit
+          fail-on-error: true
+
+  docker-build:
+    name: Docker Image
+    runs-on: ubuntu-latest
+    needs: [build-and-test, architecture-guard]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t facimus/procesos-back:${{ github.sha }} .
+
+      - name: Verify image runs
+        run: |
+          docker run -d --name test-container -p 8080:8080 facimus/procesos-back:${{ github.sha }}
+          sleep 10
+          docker logs test-container
+          docker stop test-container
+
+  sonarqube:
+    name: SonarQube Analysis
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    # Corre en push y en pull_request. Los PRs desde forks no reciben secrets, asi que se
+    # omiten en vez de fallar (los PRs de ramas del propio repo si se analizan).
+    if: >
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      # sonar.qualitygate.wait=true hace que el job falle si el quality gate de SonarCloud
+      # no se cumple (cobertura de codigo nuevo >= 80 %, sin bugs/vulnerabilidades nuevas,
+      # duplicacion <= 3 %). Sin esto el analisis solo se sube y el job queda en verde
+      # aunque el gate falle.
+      - name: Build, test & analyze
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # necesario para leer los datos del PR
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: >
+          mvn -B verify sonar:sonar
+          -Dsonar.host.url=$SONAR_HOST_URL
+          -Dsonar.token=$SONAR_TOKEN
+          -Dsonar.qualitygate.wait=true
