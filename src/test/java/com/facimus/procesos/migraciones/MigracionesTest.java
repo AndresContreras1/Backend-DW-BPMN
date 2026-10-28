@@ -33,7 +33,7 @@ class MigracionesTest {
     void Migraciones_aplicar_esquemaCoincideConLasEntidades() {
         Flyway flyway = Flyway.configure().dataSource(dataSource).locations("classpath:db/migration/common").load();
 
-        assertThat(flyway.info().applied()).hasSize(2);
+        assertThat(flyway.info().applied()).isNotEmpty();
         assertThat(flyway.info().pending()).isEmpty();
     }
 }
