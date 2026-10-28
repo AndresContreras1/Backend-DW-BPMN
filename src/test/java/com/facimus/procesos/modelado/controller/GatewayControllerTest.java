@@ -17,9 +17,12 @@ import com.facimus.procesos.modelado.model.TipoGateway;
 import com.facimus.procesos.modelado.service.GatewayService;
 
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 
 import com.facimus.procesos.config.ModelMapperConfig;
+import org.modelmapper.ModelMapper;
+import com.facimus.procesos.modelado.controller.dto.GatewayRequest;
+import com.facimus.procesos.modelado.controller.dto.GatewayResponse;
+import com.facimus.procesos.modelado.controller.dto.ImpactoEliminacionResponse;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
@@ -30,8 +33,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 
 @WebMvcTest(GatewayController.class)
-@Import(ModelMapperConfig.class)
 class GatewayControllerTest {
+
+    private static final ModelMapper MAPPER = new ModelMapperConfig().modelMapper();
 
     @Autowired
     private MockMvc mockMvc;
@@ -42,8 +46,8 @@ class GatewayControllerTest {
     @Test
     @DisplayName("POST /api/v1/lanes/{laneId}/gateways - crear gateway (201)")
     void crear_gateway() throws Exception {
-        Gateway gw = crearGateway(1L, "Decision pago");
-        given(gatewayService.crear(eq(1L), eq(3L), anyString(), any(), anyInt(), anyInt())).willReturn(gw);
+        var gw = crearGateway(1L, "Decision pago");
+        given(gatewayService.crear(eq(1L), eq(3L), any(GatewayRequest.class))).willReturn(gw);
 
         mockMvc.perform(post("/api/v1/lanes/3/gateways")
                         .with(principal(RolAcceso.EDITOR))
@@ -72,8 +76,8 @@ class GatewayControllerTest {
     @Test
     @DisplayName("GET /api/v1/gateways/{id} - detalle gateway (200)")
     void detalle_gateway() throws Exception {
-        Gateway gw = crearGateway(1L, "Decision pago");
-        given(gatewayService.obtener(1L, 1L)).willReturn(gw);
+        var gw = crearGateway(1L, "Decision pago");
+        given(gatewayService.consultarDetalle(1L, 1L)).willReturn(gw);
 
         mockMvc.perform(get("/api/v1/gateways/1").with(principal(RolAcceso.EDITOR)))
                 .andExpect(status().isOk())
@@ -90,8 +94,8 @@ class GatewayControllerTest {
     @Test
     @DisplayName("GET /api/v1/lanes/{laneId}/gateways - listar gateways (200)")
     void listar_gateways() throws Exception {
-        Gateway gw = crearGateway(1L, "Decision pago");
-        given(gatewayService.listarPorLane(1L, 3L)).willReturn(List.of(gw));
+        var gw = crearGateway(1L, "Decision pago");
+        given(gatewayService.consultarPorLane(1L, 3L)).willReturn(List.of(gw));
 
         mockMvc.perform(get("/api/v1/lanes/3/gateways").with(principal(RolAcceso.EDITOR)))
                 .andExpect(status().isOk())
@@ -108,9 +112,8 @@ class GatewayControllerTest {
     @Test
     @DisplayName("PUT /api/v1/gateways/{id} - editar gateway (200)")
     void editar_gateway() throws Exception {
-        Gateway gw = crearGateway(1L, "Decision envio");
-        gw.setTipoGateway(TipoGateway.PARALELO);
-        given(gatewayService.editar(eq(1L), eq(1L), anyString(), any(), anyInt(), anyInt())).willReturn(gw);
+        var gw = new GatewayResponse(1L, "Decision envio", TipoGateway.PARALELO, 300, 150, 3L);
+        given(gatewayService.editar(eq(1L), eq(1L), any(GatewayRequest.class))).willReturn(gw);
 
         mockMvc.perform(put("/api/v1/gateways/1")
                         .with(principal(RolAcceso.EDITOR))
@@ -124,9 +127,8 @@ class GatewayControllerTest {
 
     @Test
     void impacto_eliminacion_retorna_advertencias() throws Exception {
-        given(gatewayService.evaluarImpactoEliminacion(1L, 1L))
-                .willReturn(new com.facimus.procesos.modelado.service.dto.ImpactoEliminacion(
-                        true, List.of("Rompe ramificacion")));
+        given(gatewayService.consultarImpactoEliminacion(1L, 1L))
+                .willReturn(new ImpactoEliminacionResponse(true, true, List.of("Rompe ramificacion")));
 
         mockMvc.perform(get("/api/v1/gateways/1/impacto-eliminacion")
                 .with(principal(RolAcceso.EDITOR)))
@@ -145,7 +147,7 @@ class GatewayControllerTest {
                 .andExpect(status().isNoContent());
     }
 
-    private Gateway crearGateway(Long id, String nombre) {
+    private GatewayResponse crearGateway(Long id, String nombre) {
         Lane lane = new Lane();
         lane.setId(3L);
 
@@ -156,7 +158,7 @@ class GatewayControllerTest {
         gw.setPosicionX(300);
         gw.setPosicionY(150);
         gw.setLane(lane);
-        return gw;
+        return MAPPER.map(gw, GatewayResponse.class);
     }
 
 }

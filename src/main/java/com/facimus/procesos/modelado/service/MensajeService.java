@@ -1,5 +1,8 @@
 package com.facimus.procesos.modelado.service;
 
+import com.facimus.procesos.modelado.controller.dto.MensajeRequest;
+import com.facimus.procesos.modelado.controller.dto.EditarMensajeRequest;
+import com.facimus.procesos.modelado.controller.dto.MensajeResponse;
 import java.util.List;
 import java.util.Optional;
 import com.facimus.procesos.modelado.model.Mensaje;
@@ -30,4 +33,12 @@ public interface MensajeService {
     List<Mensaje> listarTodosPorProceso(Long empresaId, Long procesoId);
 
     boolean tieneMensajesActivosEnPool(Long empresaId, Long poolId);
+
+    MensajeResponse crear(Long empresaId, Long procesoId, MensajeRequest request);
+
+    MensajeResponse editar(Long empresaId, Long mensajeId, EditarMensajeRequest request);
+
+    List<MensajeResponse> consultarPorProceso(Long empresaId, Long procesoId);
+
+    MensajeResponse consultarDetalle(Long empresaId, Long mensajeId);
 }

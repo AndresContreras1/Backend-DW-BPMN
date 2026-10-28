@@ -2,7 +2,6 @@ package com.facimus.procesos.modelado.controller;
 
 import java.util.List;
 
-import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
@@ -20,7 +19,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import com.facimus.procesos.modelado.controller.dto.ActividadRequest;
 import com.facimus.procesos.modelado.controller.dto.ActividadResponse;
 import com.facimus.procesos.modelado.controller.dto.ImpactoEliminacionResponse;
-import com.facimus.procesos.modelado.model.Actividad;
 import com.facimus.procesos.modelado.service.ActividadService;
 import com.facimus.procesos.security.ApiPrincipal;
 
@@ -42,7 +40,6 @@ import lombok.RequiredArgsConstructor;
 public class ActividadController {
 
     private final ActividadService actividadService;
-    private final ModelMapper modelMapper;
 
     @PostMapping("/lanes/{laneId}/actividades")
     @Operation(summary = "Crear una actividad en una lane")
@@ -59,14 +56,10 @@ public class ActividadController {
     public ResponseEntity<ActividadResponse> crear(@PathVariable Long laneId,
             @Validated @RequestBody ActividadRequest request, @AuthenticationPrincipal ApiPrincipal principal) {
         Long empresaId = principal.empresaId();
-        Actividad actividad = request.tipoActividad() == null
-                ? actividadService.crear(empresaId, laneId, request.nombre(), request.descripcion(),
-                        request.posicionX(), request.posicionY())
-                : actividadService.crear(empresaId, laneId, request.nombre(), request.descripcion(),
-                        request.posicionX(), request.posicionY(), request.tipoActividad());
+        ActividadResponse actividad = actividadService.crear(empresaId, laneId, request);
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentContextPath()
-                        .path("/api/v1/actividades/{id}").buildAndExpand(actividad.getId()).toUri())
-                .body(modelMapper.map(actividad, ActividadResponse.class));
+                        .path("/api/v1/actividades/{id}").buildAndExpand(actividad.id()).toUri())
+                .body(actividad);
     }
 
     @GetMapping("/actividades/{id}")
@@ -79,8 +72,7 @@ public class ActividadController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<ActividadResponse> detalle(@PathVariable Long id,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        return ResponseEntity.ok(modelMapper.map(actividadService.obtener(principal.empresaId(), id),
-                ActividadResponse.class));
+        return ResponseEntity.ok(actividadService.consultarDetalle(principal.empresaId(), id));
     }
 
     @GetMapping("/lanes/{laneId}/actividades")
@@ -93,8 +85,7 @@ public class ActividadController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<List<ActividadResponse>> listar(@PathVariable Long laneId,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        return ResponseEntity.ok(actividadService.listarPorLane(principal.empresaId(), laneId).stream()
-                .map(a -> modelMapper.map(a, ActividadResponse.class)).toList());
+        return ResponseEntity.ok(actividadService.consultarPorLane(principal.empresaId(), laneId));
     }
 
     @PutMapping("/actividades/{id}")
@@ -114,12 +105,7 @@ public class ActividadController {
     public ResponseEntity<ActividadResponse> editar(@PathVariable Long id,
             @Validated @RequestBody ActividadRequest request, @AuthenticationPrincipal ApiPrincipal principal) {
         Long empresaId = principal.empresaId();
-        Actividad actividad = request.tipoActividad() == null
-                ? actividadService.editar(empresaId, id, request.nombre(), request.descripcion(),
-                        request.posicionX(), request.posicionY(), request.laneId())
-                : actividadService.editar(empresaId, id, request.nombre(), request.descripcion(),
-                        request.posicionX(), request.posicionY(), request.laneId(), request.tipoActividad());
-        return ResponseEntity.ok(modelMapper.map(actividad, ActividadResponse.class));
+        return ResponseEntity.ok(actividadService.editar(empresaId, id, request));
     }
 
     @GetMapping("/actividades/{id}/impacto-eliminacion")
@@ -132,9 +118,7 @@ public class ActividadController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<ImpactoEliminacionResponse> impactoEliminacion(@PathVariable Long id,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        return ResponseEntity.ok(modelMapper.map(
-                actividadService.evaluarImpactoEliminacion(principal.empresaId(), id),
-                ImpactoEliminacionResponse.class));
+        return ResponseEntity.ok(actividadService.consultarImpactoEliminacion(principal.empresaId(), id));
     }
 
     @DeleteMapping("/actividades/{id}")

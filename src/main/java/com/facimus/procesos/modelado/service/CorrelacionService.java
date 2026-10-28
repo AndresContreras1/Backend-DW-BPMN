@@ -1,5 +1,6 @@
 package com.facimus.procesos.modelado.service;
 
+import com.facimus.procesos.modelado.controller.dto.CorrelacionResponse;
 import java.util.List;
 import java.util.Optional;
 import com.facimus.procesos.modelado.model.Correlacion;
@@ -18,4 +19,6 @@ public interface CorrelacionService {
     Optional<Correlacion> buscarPorMensaje(Long empresaId, Long mensajeId);
 
     void eliminarPorMensaje(Long empresaId, Long mensajeId);
+
+    CorrelacionResponse consultarPorMensaje(Long empresaId, Long mensajeId);
 }

@@ -1,5 +1,9 @@
 package com.facimus.procesos.modelado.service;
 
+import com.facimus.procesos.modelado.controller.dto.ArcoRequest;
+import com.facimus.procesos.modelado.controller.dto.EditarArcoRequest;
+import com.facimus.procesos.modelado.controller.dto.ArcoResponse;
+import com.facimus.procesos.modelado.controller.dto.ImpactoEliminacionResponse;
 import java.util.List;
 import com.facimus.procesos.modelado.model.Arco;
 import com.facimus.procesos.modelado.service.dto.ImpactoEliminacion;
@@ -27,4 +31,14 @@ public interface ArcoService {
     void desactivarPorNodo(Long empresaId, Long nodoId);
 
     Arco guardar(Arco arco);
+
+    ArcoResponse crear(Long empresaId, ArcoRequest request);
+
+    ArcoResponse editar(Long empresaId, Long arcoId, EditarArcoRequest request);
+
+    ArcoResponse consultarDetalle(Long empresaId, Long arcoId);
+
+    List<ArcoResponse> consultarPorPool(Long empresaId, Long poolId);
+
+    ImpactoEliminacionResponse consultarImpactoEliminacion(Long empresaId, Long arcoId);
 }

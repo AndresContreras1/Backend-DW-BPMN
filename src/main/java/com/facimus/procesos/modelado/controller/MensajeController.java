@@ -16,12 +16,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import org.modelmapper.ModelMapper;
 
 import com.facimus.procesos.modelado.controller.dto.EditarMensajeRequest;
 import com.facimus.procesos.modelado.controller.dto.MensajeRequest;
 import com.facimus.procesos.modelado.controller.dto.MensajeResponse;
-import com.facimus.procesos.modelado.model.Mensaje;
 import com.facimus.procesos.modelado.service.MensajeService;
 import com.facimus.procesos.security.ApiPrincipal;
 
@@ -42,7 +40,6 @@ import lombok.RequiredArgsConstructor;
 public class MensajeController {
 
     private final MensajeService mensajeService;
-    private final ModelMapper modelMapper;
 
     @GetMapping("/procesos/{procesoId}/mensajes")
     @Operation(summary = "Listar los mensajes de un proceso")
@@ -54,8 +51,7 @@ public class MensajeController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<List<MensajeResponse>> listar(@PathVariable Long procesoId,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        return ResponseEntity.ok(mensajeService.listarPorProceso(principal.empresaId(), procesoId).stream()
-                .map(m -> modelMapper.map(m, MensajeResponse.class)).toList());
+        return ResponseEntity.ok(mensajeService.consultarPorProceso(principal.empresaId(), procesoId));
     }
 
     @GetMapping("/mensajes/{id}")
@@ -68,7 +64,7 @@ public class MensajeController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<MensajeResponse> detalle(@PathVariable Long id,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        return ResponseEntity.ok(modelMapper.map(mensajeService.obtener(principal.empresaId(), id), MensajeResponse.class));
+        return ResponseEntity.ok(mensajeService.consultarDetalle(principal.empresaId(), id));
     }
 
     @PostMapping("/procesos/{procesoId}/mensajes")
@@ -87,16 +83,10 @@ public class MensajeController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<MensajeResponse> crear(@PathVariable Long procesoId,
             @Validated @RequestBody MensajeRequest request, @AuthenticationPrincipal ApiPrincipal principal) {
-        Mensaje mensaje = request.eventoThrowId() == null
-                ? mensajeService.crear(principal.empresaId(), procesoId, request.nombre(), request.contenido(),
-                        request.poolOrigenId(), request.poolDestinoId())
-                : mensajeService.crear(principal.empresaId(), procesoId, request.nombre(), request.contenido(),
-                        request.poolOrigenId(), request.poolDestinoId(), request.eventoThrowId(), request.eventoCatchId(),
-                        request.claveCorrelacion(), request.tipoDestinoExterno(), request.destinoExterno(),
-                        request.politicaFalloNotificacion(), request.actividadErrorId(), request.politicaSinCaso());
+        MensajeResponse mensaje = mensajeService.crear(principal.empresaId(), procesoId, request);
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentContextPath()
-                        .path("/api/v1/mensajes/{id}").buildAndExpand(mensaje.getId()).toUri())
-                .body(modelMapper.map(mensaje, MensajeResponse.class));
+                        .path("/api/v1/mensajes/{id}").buildAndExpand(mensaje.id()).toUri())
+                .body(mensaje);
     }
 
     @PutMapping("/mensajes/{id}")
@@ -113,17 +103,7 @@ public class MensajeController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<MensajeResponse> editar(@PathVariable Long id,
             @Validated @RequestBody EditarMensajeRequest request, @AuthenticationPrincipal ApiPrincipal principal) {
-        boolean edicionLegacy = request.eventoCatchId() == null && request.claveCorrelacion() == null
-                && request.tipoDestinoExterno() == null && request.destinoExterno() == null
-                && request.politicaFalloNotificacion() == null && request.actividadErrorId() == null
-                && request.politicaSinCaso() == null;
-        Mensaje mensaje = edicionLegacy
-                ? mensajeService.editar(principal.empresaId(), id, request.nombre(), request.contenido())
-                : mensajeService.editar(principal.empresaId(), id, request.nombre(), request.contenido(),
-                        request.eventoCatchId(), request.claveCorrelacion(), request.tipoDestinoExterno(),
-                        request.destinoExterno(), request.politicaFalloNotificacion(),
-                        request.actividadErrorId(), request.politicaSinCaso());
-        return ResponseEntity.ok(modelMapper.map(mensaje, MensajeResponse.class));
+        return ResponseEntity.ok(mensajeService.editar(principal.empresaId(), id, request));
     }
 
     @DeleteMapping("/mensajes/{id}")

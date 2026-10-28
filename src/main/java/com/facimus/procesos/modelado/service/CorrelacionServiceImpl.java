@@ -1,5 +1,7 @@
 package com.facimus.procesos.modelado.service;
 
+import com.facimus.procesos.modelado.controller.dto.CorrelacionResponse;
+import org.modelmapper.ModelMapper;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,6 +31,7 @@ public class CorrelacionServiceImpl implements CorrelacionService {
 
     private final CorrelacionRepository correlacionRepository;
     private final AuditoriaModeladoService auditoriaModeladoService;
+    private final ModelMapper modelMapper;
 
     @Transactional
     @Override
@@ -105,5 +108,11 @@ public class CorrelacionServiceImpl implements CorrelacionService {
             throw new ReglaNegocioException(
                     "La combinacion nombre y clave de correlacion es ambigua dentro del proceso.");
         }
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public CorrelacionResponse consultarPorMensaje(Long empresaId, Long mensajeId) {
+        return modelMapper.map(obtener(empresaId, mensajeId), CorrelacionResponse.class);
     }
 }

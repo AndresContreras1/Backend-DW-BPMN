@@ -15,11 +15,13 @@ import com.facimus.procesos.modelado.service.CorrelacionOrquestadorService;
 import com.facimus.procesos.modelado.service.CorrelacionService;
 
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 
 import com.facimus.procesos.config.ModelMapperConfig;
+import org.modelmapper.ModelMapper;
+import com.facimus.procesos.modelado.controller.dto.CorrelacionRequest;
+import com.facimus.procesos.modelado.controller.dto.CorrelacionResponse;
 
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
@@ -30,8 +32,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CorrelacionController.class)
-@Import(ModelMapperConfig.class)
 class CorrelacionControllerTest {
+
+    private static final ModelMapper MAPPER = new ModelMapperConfig().modelMapper();
 
     @Autowired
     private MockMvc mockMvc;
@@ -45,8 +48,8 @@ class CorrelacionControllerTest {
     @Test
     @DisplayName("PUT /api/v1/mensajes/{mensajeId}/correlacion - definir correlacion (200)")
     void definir_correlacion() throws Exception {
-        Correlacion c = crearCorrelacion(1L, "orderId");
-        given(correlacionOrquestadorService.definir(eq(1L), eq(5L), anyString())).willReturn(c);
+        var c = crearCorrelacion(1L, "orderId");
+        given(correlacionOrquestadorService.definir(eq(1L), eq(5L), any(CorrelacionRequest.class))).willReturn(c);
 
         mockMvc.perform(put("/api/v1/mensajes/5/correlacion")
                         .with(principal(RolAcceso.EDITOR))
@@ -74,8 +77,8 @@ class CorrelacionControllerTest {
     @Test
     @DisplayName("GET /api/v1/mensajes/{mensajeId}/correlacion - obtener correlacion (200)")
     void obtener_correlacion() throws Exception {
-        Correlacion c = crearCorrelacion(1L, "customerId");
-        given(correlacionService.obtener(1L, 5L)).willReturn(c);
+        var c = crearCorrelacion(1L, "customerId");
+        given(correlacionService.consultarPorMensaje(1L, 5L)).willReturn(c);
 
         mockMvc.perform(get("/api/v1/mensajes/5/correlacion").with(principal(RolAcceso.EDITOR)))
                 .andExpect(status().isOk())
@@ -105,7 +108,7 @@ class CorrelacionControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    private Correlacion crearCorrelacion(Long id, String criterio) {
+    private CorrelacionResponse crearCorrelacion(Long id, String criterio) {
         Mensaje mensaje = new Mensaje();
         mensaje.setId(5L);
 
@@ -113,7 +116,7 @@ class CorrelacionControllerTest {
         c.setId(id);
         c.setCriterio(criterio);
         c.setMensaje(mensaje);
-        return c;
+        return MAPPER.map(c, CorrelacionResponse.class);
     }
 
 }

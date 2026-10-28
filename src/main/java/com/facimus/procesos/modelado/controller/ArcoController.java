@@ -15,13 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import org.modelmapper.ModelMapper;
 
 import com.facimus.procesos.modelado.controller.dto.ArcoRequest;
 import com.facimus.procesos.modelado.controller.dto.ArcoResponse;
 import com.facimus.procesos.modelado.controller.dto.ImpactoEliminacionResponse;
 import com.facimus.procesos.modelado.controller.dto.EditarArcoRequest;
-import com.facimus.procesos.modelado.model.Arco;
 import com.facimus.procesos.modelado.service.ArcoService;
 import com.facimus.procesos.security.ApiPrincipal;
 
@@ -43,7 +41,6 @@ import lombok.RequiredArgsConstructor;
 public class ArcoController {
 
     private final ArcoService arcoService;
-    private final ModelMapper modelMapper;
 
     @PostMapping("/arcos")
     @Operation(summary = "Crear un arco entre dos nodos", description = "Ambos nodos deben pertenecer al mismo pool.")
@@ -62,11 +59,10 @@ public class ArcoController {
     public ResponseEntity<ArcoResponse> crear(@Validated @RequestBody ArcoRequest request,
             @AuthenticationPrincipal ApiPrincipal principal) {
         Long empresaId = principal.empresaId();
-        Arco arco = arcoService.crear(empresaId, request.origenId(), request.destinoId(), request.etiqueta(),
-                request.condicion());
+        ArcoResponse arco = arcoService.crear(empresaId, request);
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentContextPath()
-                        .path("/api/v1/arcos/{id}").buildAndExpand(arco.getId()).toUri())
-                .body(modelMapper.map(arco, ArcoResponse.class));
+                        .path("/api/v1/arcos/{id}").buildAndExpand(arco.id()).toUri())
+                .body(arco);
     }
 
     @GetMapping("/arcos/{id}")
@@ -80,8 +76,7 @@ public class ArcoController {
     public ResponseEntity<ArcoResponse> detalle(@PathVariable Long id,
             @AuthenticationPrincipal ApiPrincipal principal) {
         Long empresaId = principal.empresaId();
-        Arco arco = arcoService.obtener(empresaId, id);
-        return ResponseEntity.ok(modelMapper.map(arco, ArcoResponse.class));
+        return ResponseEntity.ok(arcoService.consultarDetalle(empresaId, id));
     }
 
     @GetMapping("/pools/{poolId}/arcos")
@@ -95,9 +90,7 @@ public class ArcoController {
     public ResponseEntity<List<ArcoResponse>> listar(@PathVariable Long poolId,
             @AuthenticationPrincipal ApiPrincipal principal) {
         Long empresaId = principal.empresaId();
-        List<ArcoResponse> arcos = arcoService.listarPorPool(empresaId, poolId).stream()
-                .map(a -> modelMapper.map(a, ArcoResponse.class)).toList();
-        return ResponseEntity.ok(arcos);
+        return ResponseEntity.ok(arcoService.consultarPorPool(empresaId, poolId));
     }
 
     @PutMapping("/arcos/{id}")
@@ -118,9 +111,7 @@ public class ArcoController {
             @Validated @RequestBody EditarArcoRequest request,
             @AuthenticationPrincipal ApiPrincipal principal) {
         Long empresaId = principal.empresaId();
-        Arco arco = arcoService.editar(empresaId, id, request.etiqueta(), request.condicion(),
-                request.origenId(), request.destinoId());
-        return ResponseEntity.ok(modelMapper.map(arco, ArcoResponse.class));
+        return ResponseEntity.ok(arcoService.editar(empresaId, id, request));
     }
 
     @GetMapping("/arcos/{id}/impacto-eliminacion")
@@ -133,9 +124,7 @@ public class ArcoController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<ImpactoEliminacionResponse> impactoEliminacion(@PathVariable Long id,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        return ResponseEntity.ok(modelMapper.map(
-                arcoService.evaluarImpactoEliminacion(principal.empresaId(), id),
-                ImpactoEliminacionResponse.class));
+        return ResponseEntity.ok(arcoService.consultarImpactoEliminacion(principal.empresaId(), id));
     }
 
     @DeleteMapping("/arcos/{id}")

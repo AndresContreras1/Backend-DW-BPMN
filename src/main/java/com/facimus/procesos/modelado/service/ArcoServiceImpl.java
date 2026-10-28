@@ -1,5 +1,10 @@
 package com.facimus.procesos.modelado.service;
 
+import com.facimus.procesos.modelado.controller.dto.ArcoRequest;
+import com.facimus.procesos.modelado.controller.dto.EditarArcoRequest;
+import com.facimus.procesos.modelado.controller.dto.ArcoResponse;
+import com.facimus.procesos.modelado.controller.dto.ImpactoEliminacionResponse;
+import org.modelmapper.ModelMapper;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -29,6 +34,7 @@ public class ArcoServiceImpl implements ArcoService {
     private final NodoFlujoService nodoFlujoService;
     private final PoolService poolService;
     private final AuditoriaModeladoService auditoriaModeladoService;
+    private final ModelMapper modelMapper;
 
     @Transactional
     @Override
@@ -210,6 +216,42 @@ public class ArcoServiceImpl implements ArcoService {
     @Override
     public Arco guardar(Arco arco) {
         return arcoRepository.save(arco);
+    }
+
+    @Transactional
+    @Override
+    public ArcoResponse crear(Long empresaId, ArcoRequest request) {
+        Arco arco = crear(empresaId, request.origenId(), request.destinoId(), request.etiqueta(),
+                request.condicion());
+        return modelMapper.map(arco, ArcoResponse.class);
+    }
+
+    @Transactional
+    @Override
+    public ArcoResponse editar(Long empresaId, Long arcoId, EditarArcoRequest request) {
+        Arco arco = editar(empresaId, arcoId, request.etiqueta(), request.condicion(),
+                request.origenId(), request.destinoId());
+        return modelMapper.map(arco, ArcoResponse.class);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public ArcoResponse consultarDetalle(Long empresaId, Long arcoId) {
+        return modelMapper.map(obtener(empresaId, arcoId), ArcoResponse.class);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<ArcoResponse> consultarPorPool(Long empresaId, Long poolId) {
+        return listarPorPool(empresaId, poolId).stream()
+                .map(a -> modelMapper.map(a, ArcoResponse.class)).toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public ImpactoEliminacionResponse consultarImpactoEliminacion(Long empresaId, Long arcoId) {
+        return modelMapper.map(evaluarImpactoEliminacion(empresaId, arcoId),
+                ImpactoEliminacionResponse.class);
     }
 
     private void validarProcesoActivo(Proceso proceso) {

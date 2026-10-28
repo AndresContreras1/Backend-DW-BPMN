@@ -16,9 +16,12 @@ import com.facimus.procesos.modelado.model.Lane;
 import com.facimus.procesos.modelado.service.ActividadService;
 
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 
 import com.facimus.procesos.config.ModelMapperConfig;
+import org.modelmapper.ModelMapper;
+import com.facimus.procesos.modelado.controller.dto.ActividadRequest;
+import com.facimus.procesos.modelado.controller.dto.ActividadResponse;
+import com.facimus.procesos.modelado.controller.dto.ImpactoEliminacionResponse;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
@@ -29,8 +32,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 
 @WebMvcTest(ActividadController.class)
-@Import(ModelMapperConfig.class)
 class ActividadControllerTest {
+
+    private static final ModelMapper MAPPER = new ModelMapperConfig().modelMapper();
 
     @Autowired
     private MockMvc mockMvc;
@@ -41,8 +45,8 @@ class ActividadControllerTest {
     @Test
     @DisplayName("POST /api/v1/lanes/{laneId}/actividades - crear actividad (201)")
     void crear_actividad() throws Exception {
-        Actividad a = crearActividad(1L, "Revisar solicitud");
-        given(actividadService.crear(eq(1L), eq(3L), anyString(), anyString(), anyInt(), anyInt())).willReturn(a);
+        var a = crearActividad(1L, "Revisar solicitud");
+        given(actividadService.crear(eq(1L), eq(3L), any(ActividadRequest.class))).willReturn(a);
 
         mockMvc.perform(post("/api/v1/lanes/3/actividades")
                         .with(principal(RolAcceso.EDITOR))
@@ -82,8 +86,8 @@ class ActividadControllerTest {
     @Test
     @DisplayName("GET /api/v1/actividades/{id} - detalle actividad (200)")
     void detalle_actividad() throws Exception {
-        Actividad a = crearActividad(1L, "Revisar solicitud");
-        given(actividadService.obtener(1L, 1L)).willReturn(a);
+        var a = crearActividad(1L, "Revisar solicitud");
+        given(actividadService.consultarDetalle(1L, 1L)).willReturn(a);
 
         mockMvc.perform(get("/api/v1/actividades/1").with(principal(RolAcceso.EDITOR)))
                 .andExpect(status().isOk())
@@ -100,8 +104,8 @@ class ActividadControllerTest {
     @Test
     @DisplayName("GET /api/v1/lanes/{laneId}/actividades - listar actividades (200)")
     void listar_actividades() throws Exception {
-        Actividad a = crearActividad(1L, "Revisar solicitud");
-        given(actividadService.listarPorLane(1L, 3L)).willReturn(List.of(a));
+        var a = crearActividad(1L, "Revisar solicitud");
+        given(actividadService.consultarPorLane(1L, 3L)).willReturn(List.of(a));
 
         mockMvc.perform(get("/api/v1/lanes/3/actividades").with(principal(RolAcceso.EDITOR)))
                 .andExpect(status().isOk())
@@ -118,8 +122,8 @@ class ActividadControllerTest {
     @Test
     @DisplayName("PUT /api/v1/actividades/{id} - editar actividad (200)")
     void editar_actividad() throws Exception {
-        Actividad a = crearActividad(1L, "Revisar v2");
-        given(actividadService.editar(eq(1L), eq(1L), anyString(), anyString(), anyInt(), anyInt(), any())).willReturn(a);
+        var a = crearActividad(1L, "Revisar v2");
+        given(actividadService.editar(eq(1L), eq(1L), any(ActividadRequest.class))).willReturn(a);
 
         mockMvc.perform(put("/api/v1/actividades/1")
                         .with(principal(RolAcceso.EDITOR))
@@ -133,9 +137,8 @@ class ActividadControllerTest {
 
     @Test
     void impacto_eliminacion_retorna_advertencias() throws Exception {
-        given(actividadService.evaluarImpactoEliminacion(1L, 1L))
-                .willReturn(new com.facimus.procesos.modelado.service.dto.ImpactoEliminacion(
-                        true, List.of("Quedara sin salida")));
+        given(actividadService.consultarImpactoEliminacion(1L, 1L))
+                .willReturn(new ImpactoEliminacionResponse(true, true, List.of("Quedara sin salida")));
 
         mockMvc.perform(get("/api/v1/actividades/1/impacto-eliminacion")
                 .with(principal(RolAcceso.EDITOR)))
@@ -154,7 +157,7 @@ class ActividadControllerTest {
                 .andExpect(status().isNoContent());
     }
 
-    private Actividad crearActividad(Long id, String nombre) {
+    private ActividadResponse crearActividad(Long id, String nombre) {
         Lane lane = new Lane();
         lane.setId(3L);
 
@@ -165,7 +168,7 @@ class ActividadControllerTest {
         a.setPosicionX(100);
         a.setPosicionY(200);
         a.setLane(lane);
-        return a;
+        return MAPPER.map(a, ActividadResponse.class);
     }
 
 }
