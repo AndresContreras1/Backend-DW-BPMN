@@ -100,11 +100,9 @@ jobs:
     name: SonarQube Analysis
     runs-on: ubuntu-latest
     needs: build-and-test
-    # Corre en push y en pull_request. Los PRs desde forks no reciben secrets, asi que se
-    # omiten en vez de fallar (los PRs de ramas del propio repo si se analizan).
-    if: >
-      github.event_name == 'push' ||
-      github.event.pull_request.head.repo.full_name == github.repository
+    # Solo corre en push a main: SonarCloud (plan gratuito) no analiza ramas ni pull requests,
+    # asi que en un PR el job fallaria sin que el codigo tenga ningun problema.
+    if: github.event_name == 'push'
 
     steps:
       - name: Checkout
