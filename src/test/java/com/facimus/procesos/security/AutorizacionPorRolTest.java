@@ -32,7 +32,7 @@ import tools.jackson.databind.json.JsonMapper;
 class AutorizacionPorRolTest {
 
     private static final String ADMIN_DEMO = "admin@demo.com";
-    private static final String CLAVE_DEMO = "admin123";
+    private static final String CLAVE_DEMO = "Admin-Demo-2026";
     private static final String EDITOR = "editor@autorizacion.com";
     private static final String LECTOR = "lector@autorizacion.com";
     private static final String CLAVE_COLABORADOR = "colaborador123";
