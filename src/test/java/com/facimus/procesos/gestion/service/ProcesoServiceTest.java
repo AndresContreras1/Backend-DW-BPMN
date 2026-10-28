@@ -184,4 +184,119 @@ class ProcesoServiceTest {
         assertThrows(ReglaNegocioException.class,
                 () -> procesoService.cambiarEstado(1L, 100L, 10L, EstadoProceso.BORRADOR));
     }
+
+    @Test
+    @DisplayName("ProcesoServiceImpl_crear_nombreYCategoriaConEspacios_guardaRecortadosYCompruebaUnicidadRecortada")
+    void ProcesoServiceImpl_crear_nombreYCategoriaConEspacios_guardaRecortadosYCompruebaUnicidadRecortada() {
+        when(procesoRepository.existsByEmpresaIdAndNombreIgnoreCaseAndActivoTrue(1L, "Compras")).thenReturn(false);
+        when(empresaService.obtener(1L)).thenReturn(empresa);
+        when(usuarioService.obtener(1L, 10L)).thenReturn(usuario);
+        when(procesoRepository.save(any(Proceso.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Proceso result = procesoService.crear(1L, 10L, "  Compras  ", "desc", "  Operativo ");
+
+        assertEquals("Compras", result.getNombre());
+        assertEquals("Operativo", result.getCategoria());
+        verify(procesoRepository).existsByEmpresaIdAndNombreIgnoreCaseAndActivoTrue(1L, "Compras");
+    }
+
+    @Test
+    @DisplayName("ProcesoServiceImpl_crear_nombreDuplicadoSoloPorEspacios_lanzaReglaNegocio")
+    void ProcesoServiceImpl_crear_nombreDuplicadoSoloPorEspacios_lanzaReglaNegocio() {
+        when(procesoRepository.existsByEmpresaIdAndNombreIgnoreCaseAndActivoTrue(1L, "Compras")).thenReturn(true);
+
+        assertThrows(ReglaNegocioException.class,
+                () -> procesoService.crear(1L, 10L, "  Compras ", "desc", "cat"));
+
+        verify(procesoRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("ProcesoServiceImpl_editarDatos_cambiaCampos_historialDetallaValorAnteriorYNuevo")
+    void ProcesoServiceImpl_editarDatos_cambiaCampos_historialDetallaValorAnteriorYNuevo() {
+        proceso.setDescripcion("Descripcion vieja");
+        proceso.setCategoria("Operativo");
+        when(procesoRepository.findByIdAndEmpresaIdAndActivoTrue(100L, 1L)).thenReturn(Optional.of(proceso));
+        when(usuarioService.obtener(1L, 10L)).thenReturn(usuario);
+        when(procesoRepository.existsByEmpresaIdAndNombreIgnoreCaseAndActivoTrue(1L, "Ventas")).thenReturn(false);
+        when(procesoRepository.save(any(Proceso.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Proceso result = procesoService.editarDatos(1L, 100L, 10L, " Ventas ", "Descripcion vieja", " Operativo ");
+
+        assertEquals("Ventas", result.getNombre());
+        org.mockito.ArgumentCaptor<String> captor = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(historialCambioService).registrar(eq(result), eq(usuario), captor.capture());
+        assertTrue(captor.getValue().contains("nombre: \"Compras\" → \"Ventas\""), captor.getValue());
+        assertFalse(captor.getValue().contains("descripcion"), captor.getValue());
+        assertFalse(captor.getValue().contains("categoria"), captor.getValue());
+    }
+
+    @Test
+    @DisplayName("ProcesoServiceImpl_editarDatos_valoresLargos_historialNoSuperaLos255Caracteres")
+    void ProcesoServiceImpl_editarDatos_valoresLargos_historialNoSuperaLos255Caracteres() {
+        proceso.setDescripcion("a".repeat(500));
+        proceso.setCategoria("c".repeat(100));
+        when(procesoRepository.findByIdAndEmpresaIdAndActivoTrue(100L, 1L)).thenReturn(Optional.of(proceso));
+        when(usuarioService.obtener(1L, 10L)).thenReturn(usuario);
+        when(procesoRepository.save(any(Proceso.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        procesoService.editarDatos(1L, 100L, 10L, "Compras", "b".repeat(500), "d".repeat(100));
+
+        org.mockito.ArgumentCaptor<String> captor = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(historialCambioService).registrar(any(), any(), captor.capture());
+        assertTrue(captor.getValue().length() <= 255, "longitud " + captor.getValue().length());
+    }
+
+    @Test
+    @DisplayName("ProcesoServiceImpl_editarDatos_nombreRecortadoYaExiste_lanzaReglaNegocio")
+    void ProcesoServiceImpl_editarDatos_nombreRecortadoYaExiste_lanzaReglaNegocio() {
+        when(procesoRepository.findByIdAndEmpresaIdAndActivoTrue(100L, 1L)).thenReturn(Optional.of(proceso));
+        when(usuarioService.obtener(1L, 10L)).thenReturn(usuario);
+        when(procesoRepository.existsByEmpresaIdAndNombreIgnoreCaseAndActivoTrue(1L, "Ventas")).thenReturn(true);
+
+        assertThrows(ReglaNegocioException.class,
+                () -> procesoService.editarDatos(1L, 100L, 10L, "  Ventas ", "d", "c"));
+
+        verify(procesoRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("ProcesoServiceImpl_cambiarEstado_aPublicado_historialIncluyeEstadoAnteriorYNuevo")
+    void ProcesoServiceImpl_cambiarEstado_aPublicado_historialIncluyeEstadoAnteriorYNuevo() {
+        when(procesoRepository.findByIdAndEmpresaIdAndActivoTrue(100L, 1L)).thenReturn(Optional.of(proceso));
+        when(usuarioService.obtener(1L, 10L)).thenReturn(usuario);
+        when(procesoRepository.save(any(Proceso.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        procesoService.cambiarEstado(1L, 100L, 10L, EstadoProceso.PUBLICADO);
+
+        verify(historialCambioService).registrar(any(), eq(usuario), contains("BORRADOR → PUBLICADO"));
+    }
+
+    @Test
+    @DisplayName("ProcesoServiceImpl_obtenerParaConsulta_procesoInactivo_loDevuelve")
+    void ProcesoServiceImpl_obtenerParaConsulta_procesoInactivo_loDevuelve() {
+        proceso.setActivo(false);
+        when(procesoRepository.findByIdAndEmpresaId(100L, 1L)).thenReturn(Optional.of(proceso));
+
+        assertSame(proceso, procesoService.obtenerParaConsulta(1L, 100L));
+    }
+
+    @Test
+    @DisplayName("ProcesoServiceImpl_obtenerParaConsulta_otraEmpresa_lanzaNoEncontrado")
+    void ProcesoServiceImpl_obtenerParaConsulta_otraEmpresa_lanzaNoEncontrado() {
+        when(procesoRepository.findByIdAndEmpresaId(100L, 2L)).thenReturn(Optional.empty());
+
+        assertThrows(RecursoNoEncontradoException.class, () -> procesoService.obtenerParaConsulta(2L, 100L));
+    }
+
+    @Test
+    @DisplayName("ProcesoServiceImpl_obtener_procesoInactivo_siguePidiendoProcesoActivoParaEscribir")
+    void ProcesoServiceImpl_obtener_procesoInactivo_siguePidiendoProcesoActivoParaEscribir() {
+        when(procesoRepository.findByIdAndEmpresaIdAndActivoTrue(100L, 1L)).thenReturn(Optional.empty());
+
+        assertThrows(RecursoNoEncontradoException.class,
+                () -> procesoService.editarDatos(1L, 100L, 10L, "Compras", "d", "c"));
+
+        verify(procesoRepository, never()).findByIdAndEmpresaId(any(), any());
+    }
 }

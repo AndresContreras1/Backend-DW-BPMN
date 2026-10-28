@@ -89,7 +89,7 @@ class InvitacionUsuarioServiceTest {
 
 
     @Test
-    void crear_limpia_invitaciones_expiradas() {
+    void crear_conInvitacionesExpiradas_noBorraNadaYFiltraPorEmpresa() {
         Empresa empresa = new Empresa();
         empresa.setId(1L);
 
@@ -103,7 +103,10 @@ class InvitacionUsuarioServiceTest {
 
         invitacionUsuarioService.crear(1L, "nuevo@demo.com", RolAcceso.EDITOR);
 
+        verify(invitacionUsuarioRepository, org.mockito.Mockito.never()).deleteAll();
+        verify(invitacionUsuarioRepository, org.mockito.Mockito.never()).delete(any());
         verify(invitacionUsuarioRepository)
-                .deleteAllByFechaExpiracionBeforeAndUsadaFalse(any());
+                .existsByEmpresaIdAndEmailIgnoreCaseAndUsadaFalseAndFechaExpiracionAfter(
+                        org.mockito.ArgumentMatchers.eq(1L), any(), any());
     }
 }

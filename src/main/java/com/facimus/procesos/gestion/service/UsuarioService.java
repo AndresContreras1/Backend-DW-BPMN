@@ -32,6 +32,8 @@ public interface UsuarioService {
 
     LoginResponse autenticar(LoginRequest request);
     List<UsuarioResponse> consultarPorEmpresa(Long empresaId);
+    /** {@code activo} nulo equivale a true; false lista los usuarios desactivados. */
+    List<UsuarioResponse> consultarPorEmpresa(Long empresaId, Boolean activo);
     UsuarioResponse crearColaborador(Long empresaId, CrearUsuarioRequest request);
     UsuarioResponse consultarDetalle(Long empresaId, Long usuarioId);
     UsuarioResponse actualizar(Long empresaId, Long usuarioId, ActualizarUsuarioRequest request);

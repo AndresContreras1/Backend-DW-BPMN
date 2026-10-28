@@ -12,6 +12,6 @@ public record CrearUsuarioRequest(
         @NotBlank(message = "El correo es obligatorio.")
         @Email(message = "El correo no es valido.") String email,
         @NotBlank(message = "La contrasena es obligatoria.")
-        @Size(min = 6, message = "La contrasena debe tener al menos 6 caracteres.") String password,
+        @Size(min = 8, message = "La contrasena debe tener al menos 8 caracteres.") String password,
         @NotNull(message = "Debe seleccionar un rol de acceso.") RolAcceso rolAcceso) {
 }

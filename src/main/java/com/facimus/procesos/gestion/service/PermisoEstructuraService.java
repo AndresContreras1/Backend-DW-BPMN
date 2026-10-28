@@ -18,5 +18,6 @@ public interface PermisoEstructuraService {
     PermisoEstructura actualizar(Long empresaId, RolAcceso rol, boolean crearPool, boolean editarPool, boolean eliminarPool, boolean crearLane, boolean editarLane, boolean eliminarLane);
 
     List<PermisoEstructuraResponse> consultarPorEmpresa(Long empresaId);
+    PermisoEstructuraResponse consultarPorRol(Long empresaId, RolAcceso rol);
     PermisoEstructuraResponse actualizar(Long empresaId, RolAcceso rol, PermisoEstructuraRequest request);
 }

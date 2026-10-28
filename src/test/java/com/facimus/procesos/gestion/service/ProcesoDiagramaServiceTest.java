@@ -47,7 +47,7 @@ class ProcesoDiagramaServiceTest {
         Arco arco = new Arco(); arco.setId(7L); arco.setActivo(true);
         Mensaje mensaje = new Mensaje(); mensaje.setId(9L);
 
-        when(procesoService.obtener(1L, 10L)).thenReturn(proceso);
+        when(procesoService.obtenerParaConsulta(1L, 10L)).thenReturn(proceso);
         when(poolService.listarPorProceso(1L, 10L)).thenReturn(List.of(pool));
         when(laneService.listarPorProceso(1L, 10L)).thenReturn(List.of(lane));
         when(nodoFlujoService.listarActivosPorProceso(1L, 10L))
@@ -66,7 +66,25 @@ class ProcesoDiagramaServiceTest {
 
     @Test
     void proceso_inexistente_falla() {
-        when(procesoService.obtener(1L, 10L)).thenThrow(new RecursoNoEncontradoException("Proceso no encontrado."));
+        when(procesoService.obtenerParaConsulta(1L, 10L)).thenThrow(new RecursoNoEncontradoException("Proceso no encontrado."));
         assertThrows(RecursoNoEncontradoException.class, () -> service.obtener(1L, 10L));
+    }
+
+    @Test
+    void obtener_procesoInactivo_sigueSiendoConsultable() {
+        Proceso proceso = new Proceso();
+        proceso.setId(10L);
+        proceso.setActivo(false);
+        when(procesoService.obtenerParaConsulta(1L, 10L)).thenReturn(proceso);
+        when(poolService.listarPorProceso(1L, 10L)).thenReturn(List.of());
+        when(laneService.listarPorProceso(1L, 10L)).thenReturn(List.of());
+        when(nodoFlujoService.listarActivosPorProceso(1L, 10L)).thenReturn(List.of());
+        when(arcoService.listarActivosPorProceso(1L, 10L)).thenReturn(List.of());
+        when(mensajeService.listarPorProceso(1L, 10L)).thenReturn(List.of());
+
+        var detalle = service.obtener(1L, 10L);
+
+        assertSame(proceso, detalle.proceso());
+        verify(procesoService, never()).obtener(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 }

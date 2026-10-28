@@ -1,5 +1,7 @@
 package com.facimus.procesos.gestion.controller;
 
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.ParameterizedTest;
 import static com.facimus.procesos.security.ApiPrincipalRequestPostProcessor.principal;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
@@ -65,5 +67,20 @@ class PermisoEstructuraControllerTest {
 
     private PermisoEstructuraResponse permiso(RolAcceso rol, boolean eliminarPool) {
         return new PermisoEstructuraResponse(rol, true, true, eliminarPool, true, true, false);
+    }
+
+    @ParameterizedTest
+    @EnumSource(RolAcceso.class)
+    void mio_cualquierRolAutenticado_devuelveLosPermisosDeSuPropioRol(RolAcceso rol) throws Exception {
+        given(service.consultarPorRol(1L, rol)).willReturn(permiso(rol, false));
+
+        mockMvc.perform(get("/api/v1/permisos-estructura/mio").with(principal(rol)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rolAcceso").value(rol.name()));
+    }
+
+    @Test
+    void mio_sinSesion_retorna401() throws Exception {
+        mockMvc.perform(get("/api/v1/permisos-estructura/mio")).andExpect(status().isUnauthorized());
     }
 }

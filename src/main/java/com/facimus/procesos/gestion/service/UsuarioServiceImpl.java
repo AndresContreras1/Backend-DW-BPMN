@@ -11,6 +11,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.security.authentication.BadCredentialsException;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,8 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     private static final String TIPO_TOKEN = "Bearer";
     private static final String CREDENCIALES_INVALIDAS = "Correo o contrasena incorrectos.";
+    /** Hash BCrypt precalculado de una clave que nadie usa: iguala el tiempo de respuesta cuando el correo no sirve. */
+    private static final String HASH_FICTICIO = "$2a$10$9gXDubFVHPZOG1sk665ql.Qiwrep1XCkebtnBCwlTnEvibos4UlY.";
 
     private final UsuarioRepository usuarioRepository;
     private final EmpresaService empresaService;
@@ -68,6 +71,11 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     public Usuario actualizar(Long empresaId, Long usuarioId, RolAcceso rolAcceso, Boolean activo) {
         Usuario usuario = obtener(empresaId, usuarioId);
+        boolean dejaDeSerAdmin = rolAcceso != null && rolAcceso != RolAcceso.ADMINISTRADOR;
+        boolean seDesactiva = Boolean.FALSE.equals(activo);
+        if (dejaDeSerAdmin || seDesactiva) {
+            validarQueNoSeaElUltimoAdministrador(empresaId, usuario);
+        }
         if (rolAcceso != null) {
             usuario.setRolAcceso(rolAcceso);
         }
@@ -81,20 +89,33 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     public void desactivar(Long empresaId, Long usuarioId) {
         Usuario usuario = obtener(empresaId, usuarioId);
+        validarQueNoSeaElUltimoAdministrador(empresaId, usuario);
         usuario.setActivo(false);
         usuarioRepository.save(usuario);
+    }
+
+    /** La empresa siempre debe conservar al menos un administrador activo: ni se degrada ni se desactiva al ultimo. */
+    private void validarQueNoSeaElUltimoAdministrador(Long empresaId, Usuario usuario) {
+        if (usuario.isActivo() && usuario.getRolAcceso() == RolAcceso.ADMINISTRADOR
+                && usuarioRepository.countByEmpresaIdAndRolAccesoAndActivoTrue(empresaId,
+                        RolAcceso.ADMINISTRADOR) <= 1) {
+            throw new ReglaNegocioException(
+                    "No se puede degradar ni desactivar al ultimo administrador activo de la empresa.");
+        }
     }
 
     @Transactional(readOnly = true)
     @Override
     public Usuario autenticar(String email, String password) {
-        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email)
-                .filter(Usuario::isActivo)
-                .orElseThrow(() -> new ReglaNegocioException(CREDENCIALES_INVALIDAS));
-        if (!passwordEncoder.matches(password, usuario.getPasswordHash())) {
+        Optional<Usuario> candidato = usuarioRepository.findByEmailIgnoreCase(email).filter(Usuario::isActivo);
+        // Siempre se ejecuta un matches (contra un hash ficticio si no hay usuario valido) para que el tiempo
+        // de respuesta no revele si el correo existe o esta inactivo.
+        String hash = candidato.map(Usuario::getPasswordHash).orElse(HASH_FICTICIO);
+        boolean coincide = passwordEncoder.matches(password, hash);
+        if (candidato.isEmpty() || !coincide) {
             throw new ReglaNegocioException(CREDENCIALES_INVALIDAS);
         }
-        return usuario;
+        return candidato.get();
     }
 
     @Transactional(readOnly = true)
@@ -142,6 +163,15 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     public List<UsuarioResponse> consultarPorEmpresa(Long empresaId) {
         return listarPorEmpresa(empresaId).stream()
+                .map(u -> modelMapper.map(u, UsuarioResponse.class))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<UsuarioResponse> consultarPorEmpresa(Long empresaId, Boolean activo) {
+        boolean soloActivos = activo == null || activo;
+        return usuarioRepository.findAllByEmpresaIdAndActivo(empresaId, soloActivos).stream()
                 .map(u -> modelMapper.map(u, UsuarioResponse.class))
                 .toList();
     }

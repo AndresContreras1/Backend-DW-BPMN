@@ -9,7 +9,7 @@ import com.facimus.procesos.gestion.model.HistorialCambio;
 
 public interface HistorialCambioRepository extends RepositorioTenant<HistorialCambio> {
 
-    /** {@code autor} es LAZY y se mapea a DTO en el controller: se carga explicitamente aqui. */
+    /** Desempata por id para un orden estable cuando dos cambios caen en el mismo instante. {@code autor} es LAZY y se mapea a DTO en el controller: se carga explicitamente aqui. */
     @EntityGraph(attributePaths = "autor")
-    List<HistorialCambio> findAllByProcesoIdAndEmpresaIdOrderByFechaCambioDesc(Long procesoId, Long empresaId);
+    List<HistorialCambio> findAllByProcesoIdAndEmpresaIdOrderByFechaCambioDescIdDesc(Long procesoId, Long empresaId);
 }

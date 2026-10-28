@@ -57,14 +57,17 @@ public class SecurityConfig {
                                 "/error").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/logout").authenticated()
                         .requestMatchers("/api/v1/usuarios/**").hasAuthority(ADMINISTRADOR)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/permisos-estructura/mio").authenticated()
                         .requestMatchers("/api/v1/permisos-estructura/**").hasAuthority(ADMINISTRADOR)
                         .requestMatchers(HttpMethod.POST, "/api/v1/procesos/*/compartidos").hasAuthority(ADMINISTRADOR)
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/procesos/*/compartidos/**").hasAuthority(ADMINISTRADOR)
                         .requestMatchers(HttpMethod.GET, "/api/v1/**").authenticated()
                         .requestMatchers("/api/v1/roles/**").hasAuthority(ADMINISTRADOR)
+                        // DELETE de pools y lanes no esta aqui a proposito: lo decide PermisoEstructuraService
+                        // (administrador siempre; editor solo con permiso explicito; solo lectura nunca).
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/procesos/**", "/api/v1/actividades/**",
                                 "/api/v1/eventos-mensaje/**", "/api/v1/arcos/**", "/api/v1/gateways/**",
-                                "/api/v1/pools/**", "/api/v1/lanes/**", "/api/v1/mensajes/**")
+                                "/api/v1/mensajes/**")
                                 .hasAuthority(ADMINISTRADOR)
                         .requestMatchers("/api/v1/**").hasAnyAuthority(ADMINISTRADOR, EDITOR)
                         .anyRequest().authenticated());

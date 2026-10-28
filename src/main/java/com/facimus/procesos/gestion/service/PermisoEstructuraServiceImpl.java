@@ -7,6 +7,7 @@ import org.modelmapper.ModelMapper;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,9 @@ public class PermisoEstructuraServiceImpl implements PermisoEstructuraService {
     @Transactional(readOnly = true)
     @Override
     public void validar(Long empresaId, RolAcceso rol, OperacionEstructura operacion) {
+        if (rol == RolAcceso.ADMINISTRADOR) {
+            return; // el administrador siempre conserva todos los permisos de estructura
+        }
         PermisoEstructura permiso = obtener(empresaId, rol);
         boolean permitido = switch (operacion) {
             case CREAR_POOL -> permiso.isCrearPool();
@@ -40,13 +44,16 @@ public class PermisoEstructuraServiceImpl implements PermisoEstructuraService {
             case ELIMINAR_LANE -> permiso.isEliminarLane();
         };
         if (!permitido) {
-            throw new ReglaNegocioException("El rol " + rol + " no tiene permiso para " + operacion.name().toLowerCase() + ".");
+            throw new AccessDeniedException("El rol " + rol + " no tiene permiso para " + operacion.name().toLowerCase() + ".");
         }
     }
 
     @Transactional(readOnly = true)
     @Override
     public PermisoEstructura obtener(Long empresaId, RolAcceso rol) {
+        if (rol == RolAcceso.ADMINISTRADOR) {
+            return permisoPorDefecto(empresaId, rol); // todos en true, sin importar lo almacenado
+        }
         return permisoEstructuraRepository.findByEmpresaIdAndRolAcceso(empresaId, rol)
                 .orElseGet(() -> permisoPorDefecto(empresaId, rol));
     }
@@ -64,6 +71,12 @@ public class PermisoEstructuraServiceImpl implements PermisoEstructuraService {
         if (rol == RolAcceso.SOLO_LECTURA
                 && (crearPool || editarPool || eliminarPool || crearLane || editarLane || eliminarLane)) {
             throw new ReglaNegocioException("El rol SOLO_LECTURA no puede recibir permisos de modificacion.");
+        }
+        if (rol == RolAcceso.ADMINISTRADOR) {
+            if (!(crearPool && editarPool && eliminarPool && crearLane && editarLane && eliminarLane)) {
+                throw new ReglaNegocioException("El rol ADMINISTRADOR siempre conserva todos los permisos de estructura.");
+            }
+            return permisoPorDefecto(empresaId, rol);
         }
         PermisoEstructura permiso = permisoEstructuraRepository.findByEmpresaIdAndRolAcceso(empresaId, rol)
                 .orElseGet(() -> permisoPorDefecto(empresaId, rol));
@@ -106,6 +119,12 @@ public class PermisoEstructuraServiceImpl implements PermisoEstructuraService {
         return listar(empresaId).stream()
                 .map(p -> modelMapper.map(p, PermisoEstructuraResponse.class))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public PermisoEstructuraResponse consultarPorRol(Long empresaId, RolAcceso rol) {
+        return modelMapper.map(obtener(empresaId, rol), PermisoEstructuraResponse.class);
     }
 
     @Transactional

@@ -36,7 +36,7 @@ public class InvitacionUsuarioServiceImpl implements InvitacionUsuarioService {
     @Override
     public InvitacionUsuario crear(Long empresaId, String email, RolAcceso rolAcceso) {
         LocalDateTime ahora = LocalDateTime.now();
-        invitacionUsuarioRepository.deleteAllByFechaExpiracionBeforeAndUsadaFalse(ahora);
+        // Las invitaciones expiradas no se borran: simplemente se ignoran (no se pueden aceptar y no bloquean una nueva).
         if (usuarioService.existePorEmail(email)) {
             throw new ReglaNegocioException("Ya existe un usuario registrado con ese correo.");
         }

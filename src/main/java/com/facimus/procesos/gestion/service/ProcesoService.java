@@ -31,9 +31,12 @@ public interface ProcesoService {
 
     Proceso obtener(Long empresaId, Long procesoId);
 
+    /** Solo lectura: incluye los procesos inactivos (eliminados logicamente). */
+    Proceso obtenerParaConsulta(Long empresaId, Long procesoId);
+
     ProcesoResponse editarDatos(Long empresaId, Long procesoId, Long usuarioId, EditarProcesoRequest request);
     ProcesoResponse cambiarEstado(Long empresaId, Long procesoId, Long usuarioId, CambiarEstadoProcesoRequest request);
-    PageResponse<ProcesoResponse> consultarPagina(Long empresaId, String nombre, EstadoProceso estado, String categoria, Boolean activo, int pagina);
+    PageResponse<ProcesoResponse> consultarPagina(Long empresaId, String nombre, EstadoProceso estado, String categoria, Boolean activo, int pagina, int tamano);
     ProcesoDetalleResponse consultarDetalle(Long empresaId, Long procesoId);
     List<HistorialCambioResponse> consultarHistorial(Long empresaId, Long procesoId);
 }

@@ -41,6 +41,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
 /** HU-04 a HU-07: creacion, edicion, eliminacion logica y consulta de procesos. */
@@ -55,7 +56,7 @@ public class ProcesoController {
     private final ProcesoDiagramaService procesoDiagramaService;
 
     @GetMapping
-    @Operation(summary = "Buscar procesos de la empresa", description = "Soporta filtros por nombre, estado, categoria y activo, con paginacion.")
+    @Operation(summary = "Buscar procesos de la empresa", description = "Soporta filtros por nombre, estado, categoria y activo, con paginacion (pagina desde 0; tamano de 1 a 100, por defecto 10).")
     @ApiResponse(responseCode = "200", description = "Operacion exitosa.",
             content = @Content(schema = @Schema(implementation = PageResponse.class)))
     @ApiResponse(responseCode = "400", description = "Solicitud invalida (errores de validacion o JSON malformado).",
@@ -68,9 +69,11 @@ public class ProcesoController {
             @RequestParam(required = false) String categoria,
             @RequestParam(required = false) Boolean activo,
             @RequestParam(defaultValue = "0") @Min(value = 0, message = "La página no puede ser negativa.") int pagina,
+            @RequestParam(defaultValue = "10") @Min(value = 1, message = "El tamaño de página debe ser al menos 1.")
+            @Max(value = 100, message = "El tamaño de página no puede superar 100.") int tamano,
             @AuthenticationPrincipal ApiPrincipal principal) {
         return ResponseEntity.ok(procesoService.consultarPagina(principal.empresaId(), nombre, estado,
-                categoria, activo, pagina));
+                categoria, activo, pagina, tamano));
     }
 
     @PostMapping

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.facimus.procesos.common.RepositorioTenant;
+import com.facimus.procesos.gestion.model.RolAcceso;
 import com.facimus.procesos.gestion.model.Usuario;
 
 public interface UsuarioRepository extends RepositorioTenant<Usuario> {
@@ -14,6 +15,10 @@ public interface UsuarioRepository extends RepositorioTenant<Usuario> {
     boolean existsByEmailIgnoreCase(String email);
 
     List<Usuario> findAllByEmpresaIdAndActivoTrue(Long empresaId);
+
+    List<Usuario> findAllByEmpresaIdAndActivo(Long empresaId, boolean activo);
+
+    long countByEmpresaIdAndRolAccesoAndActivoTrue(Long empresaId, RolAcceso rolAcceso);
 
     /**
      * Login-only: el formulario de inicio de sesion no conoce todavia el

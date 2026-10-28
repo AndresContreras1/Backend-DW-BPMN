@@ -2,6 +2,7 @@ package com.facimus.procesos.common.api;
 
 import com.facimus.procesos.common.ReglaNegocioException;
 import com.facimus.procesos.common.RecursoNoEncontradoException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -34,6 +35,14 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler{
     @ExceptionHandler(ReglaNegocioException.class)
     public ProblemDetail manejarReglaNegocio(ReglaNegocioException ex, WebRequest req) {
         return construir(HttpStatus.CONFLICT, "Regla de negocio violada", ex.getMessage(), req);
+    }
+
+    // Restriccion de base de datos violada (unicos, claves foraneas): nunca se expone el SQL ni el nombre de la restriccion.
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ProblemDetail manejarIntegridadDeDatos(DataIntegrityViolationException ex, WebRequest req) {
+        log.warn("Violacion de integridad de datos en {}", req.getDescription(false), ex);
+        return construir(HttpStatus.CONFLICT, "Conflicto de datos",
+                "La operación no se pudo completar porque entra en conflicto con datos existentes.", req);
     }
 
     // Defensa en profundidad: captura excepciones de autenticacion lanzadas dentro de controladores

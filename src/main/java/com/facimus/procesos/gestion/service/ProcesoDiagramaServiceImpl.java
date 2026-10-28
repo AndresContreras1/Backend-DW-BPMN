@@ -50,7 +50,7 @@ public class ProcesoDiagramaServiceImpl implements ProcesoDiagramaService {
     @Transactional(readOnly = true)
     @Override
     public ProcesoDiagrama obtener(Long empresaId, Long procesoId) {
-        Proceso proceso = procesoService.obtener(empresaId, procesoId);
+        Proceso proceso = procesoService.obtenerParaConsulta(empresaId, procesoId);
         List<Pool> pools = poolService.listarPorProceso(empresaId, procesoId);
         List<Lane> lanes = laneService.listarPorProceso(empresaId, procesoId);
         var nodos = nodoFlujoService.listarActivosPorProceso(empresaId, procesoId);

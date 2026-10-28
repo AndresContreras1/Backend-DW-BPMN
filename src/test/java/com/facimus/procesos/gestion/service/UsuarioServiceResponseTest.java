@@ -145,4 +145,23 @@ class UsuarioServiceResponseTest {
         assertThat(respuesta.rolAcceso()).isEqualTo(RolAcceso.ADMINISTRADOR);
         assertThat(respuesta.activo()).isFalse();
     }
+
+    @Test
+    void UsuarioServiceImpl_consultarPorEmpresaActivo_sinFiltro_listaSoloActivos() {
+        given(usuarioRepository.findAllByEmpresaIdAndActivo(1L, true)).willReturn(List.of(usuario));
+
+        List<UsuarioResponse> respuesta = service.consultarPorEmpresa(1L, null);
+
+        assertThat(respuesta).containsExactly(new UsuarioResponse(10L, "Juan", "juan@acme.com", RolAcceso.EDITOR, true));
+    }
+
+    @Test
+    void UsuarioServiceImpl_consultarPorEmpresaActivo_activoFalse_listaLosDesactivados() {
+        usuario.setActivo(false);
+        given(usuarioRepository.findAllByEmpresaIdAndActivo(1L, false)).willReturn(List.of(usuario));
+
+        List<UsuarioResponse> respuesta = service.consultarPorEmpresa(1L, false);
+
+        assertThat(respuesta).extracting(UsuarioResponse::activo).containsExactly(false);
+    }
 }

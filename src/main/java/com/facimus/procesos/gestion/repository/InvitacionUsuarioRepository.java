@@ -12,6 +12,4 @@ public interface InvitacionUsuarioRepository extends RepositorioTenant<Invitacio
 
     boolean existsByEmpresaIdAndEmailIgnoreCaseAndUsadaFalseAndFechaExpiracionAfter(
             Long empresaId, String email, LocalDateTime fecha);
-
-    long deleteAllByFechaExpiracionBeforeAndUsadaFalse(LocalDateTime fecha);
 }

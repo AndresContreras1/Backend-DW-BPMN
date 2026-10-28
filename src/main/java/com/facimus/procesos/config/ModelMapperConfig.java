@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import com.facimus.procesos.gestion.controller.dto.EmpresaResponse;
 import com.facimus.procesos.gestion.controller.dto.HistorialCambioResponse;
 import com.facimus.procesos.gestion.controller.dto.InvitacionUsuarioResponse;
+import com.facimus.procesos.gestion.controller.dto.LaneCompartidaResponse;
 import com.facimus.procesos.gestion.controller.dto.PermisoEstructuraResponse;
 import com.facimus.procesos.gestion.controller.dto.ProcesoCompartidoDetalleResponse;
 import com.facimus.procesos.gestion.controller.dto.ProcesoCompartidoResponse;
@@ -247,7 +248,8 @@ public class ModelMapperConfig {
                         d.compartido().getEmpresa().getNombre(),
                         true,
                         d.pools().stream().map(p -> mapper.map(p, PoolResponse.class)).toList(),
-                        d.lanes().stream().map(l -> mapper.map(l, LaneResponse.class)).toList(),
+                        d.lanes().stream().map(l -> new LaneCompartidaResponse(l.getId(), l.getNombre(),
+                                l.getOrden(), l.getPool().getId(), l.getRolProceso().getNombre())).toList(),
                         d.actividades().stream().map(a -> mapper.map(a, ActividadResponse.class)).toList(),
                         d.gateways().stream().map(g -> mapper.map(g, GatewayResponse.class)).toList(),
                         d.eventos().stream().map(e -> mapper.map(e, EventoMensajeResponse.class)).toList(),

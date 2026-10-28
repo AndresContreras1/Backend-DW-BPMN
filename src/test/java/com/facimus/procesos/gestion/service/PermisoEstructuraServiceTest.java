@@ -13,6 +13,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.security.access.AccessDeniedException;
+
 import com.facimus.procesos.common.ReglaNegocioException;
 import com.facimus.procesos.gestion.model.Empresa;
 import com.facimus.procesos.gestion.model.PermisoEstructura;
@@ -68,7 +70,7 @@ class PermisoEstructuraServiceTest {
         when(permisoEstructuraRepository.findByEmpresaIdAndRolAcceso(1L, RolAcceso.EDITOR))
                 .thenReturn(Optional.of(permiso));
 
-        assertThrows(ReglaNegocioException.class,
+        assertThrows(AccessDeniedException.class,
                 () -> service.validar(1L, RolAcceso.EDITOR, OperacionEstructura.CREAR_POOL));
     }
 
@@ -85,5 +87,53 @@ class PermisoEstructuraServiceTest {
 
         assertTrue(resultado.isEliminarPool());
         assertFalse(resultado.isEliminarLane());
+    }
+
+    @Test
+    void validar_administrador_siempreEstaPermitidoAunqueLaFilaGuardadaDigaOtraCosa() {
+        for (OperacionEstructura operacion : OperacionEstructura.values()) {
+            assertDoesNotThrow(() -> service.validar(1L, RolAcceso.ADMINISTRADOR, operacion));
+        }
+        verifyNoInteractions(permisoEstructuraRepository);
+    }
+
+    @Test
+    void validar_soloLectura_nuncaTienePermiso() {
+        when(empresaService.obtener(1L)).thenReturn(empresa);
+        when(permisoEstructuraRepository.findByEmpresaIdAndRolAcceso(1L, RolAcceso.SOLO_LECTURA))
+                .thenReturn(Optional.empty());
+
+        for (OperacionEstructura operacion : OperacionEstructura.values()) {
+            assertThrows(AccessDeniedException.class,
+                    () -> service.validar(1L, RolAcceso.SOLO_LECTURA, operacion));
+        }
+    }
+
+    @Test
+    void actualizar_administradorSinTodosLosPermisos_lanzaReglaNegocioYNoGuarda() {
+        assertThrows(ReglaNegocioException.class, () -> service.actualizar(1L, RolAcceso.ADMINISTRADOR,
+                true, true, false, true, true, true));
+
+        verify(permisoEstructuraRepository, never()).save(any());
+    }
+
+    @Test
+    void actualizar_administradorConTodosLosPermisos_devuelveTodosEnTrue() {
+        when(empresaService.obtener(1L)).thenReturn(empresa);
+
+        var resultado = service.actualizar(1L, RolAcceso.ADMINISTRADOR, true, true, true, true, true, true);
+
+        assertTrue(resultado.isEliminarPool());
+        assertTrue(resultado.isEliminarLane());
+    }
+
+    @Test
+    void obtener_administradorConFilaRevocada_siguePermitiendoTodo() {
+        when(empresaService.obtener(1L)).thenReturn(empresa);
+
+        var permiso = service.obtener(1L, RolAcceso.ADMINISTRADOR);
+
+        assertTrue(permiso.isCrearPool() && permiso.isEditarPool() && permiso.isEliminarPool()
+                && permiso.isCrearLane() && permiso.isEditarLane() && permiso.isEliminarLane());
     }
 }

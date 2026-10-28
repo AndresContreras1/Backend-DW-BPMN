@@ -59,4 +59,27 @@ class EmpresaServiceTest {
         assertTrue(ex.getMessage().contains("NIT"));
         verify(empresaRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("EmpresaServiceImpl_registrar_nitConPuntosEspaciosYMinusculas_guardaNitNormalizado")
+    void EmpresaServiceImpl_registrar_nitConPuntosEspaciosYMinusculas_guardaNitNormalizado() {
+        when(empresaRepository.existsByNit("900123456-7K")).thenReturn(false);
+        when(empresaRepository.save(any(Empresa.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Empresa resultado = empresaService.registrar("Acme", "  900.123.456 -7k ", "info@acme.com");
+
+        assertEquals("900123456-7K", resultado.getNit());
+        verify(empresaRepository).existsByNit("900123456-7K");
+    }
+
+    @Test
+    @DisplayName("EmpresaServiceImpl_registrar_nitDuplicadoConOtroFormato_lanzaExcepcion")
+    void EmpresaServiceImpl_registrar_nitDuplicadoConOtroFormato_lanzaExcepcion() {
+        when(empresaRepository.existsByNit("900123456")).thenReturn(true);
+
+        assertThrows(ReglaNegocioException.class,
+                () -> empresaService.registrar("Acme", "900.123.456", "info@acme.com"));
+
+        verify(empresaRepository, never()).save(any());
+    }
 }

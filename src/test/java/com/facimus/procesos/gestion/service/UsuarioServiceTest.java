@@ -145,4 +145,105 @@ class UsuarioServiceTest {
         assertThrows(RecursoNoEncontradoException.class,
                 () -> usuarioService.obtener(1L, 99L));
     }
+
+    @Test
+    @DisplayName("UsuarioServiceImpl_actualizar_ultimoAdministradorCambiaDeRol_lanzaReglaNegocio")
+    void UsuarioServiceImpl_actualizar_ultimoAdministradorCambiaDeRol_lanzaReglaNegocio() {
+        usuario.setRolAcceso(RolAcceso.ADMINISTRADOR);
+        when(usuarioRepository.findByIdAndEmpresaId(10L, 1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.countByEmpresaIdAndRolAccesoAndActivoTrue(1L, RolAcceso.ADMINISTRADOR)).thenReturn(1L);
+
+        ReglaNegocioException ex = assertThrows(ReglaNegocioException.class,
+                () -> usuarioService.actualizar(1L, 10L, RolAcceso.EDITOR, null));
+
+        assertTrue(ex.getMessage().contains("ultimo administrador"));
+        assertEquals(RolAcceso.ADMINISTRADOR, usuario.getRolAcceso());
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("UsuarioServiceImpl_actualizar_ultimoAdministradorSeDesactiva_lanzaReglaNegocio")
+    void UsuarioServiceImpl_actualizar_ultimoAdministradorSeDesactiva_lanzaReglaNegocio() {
+        usuario.setRolAcceso(RolAcceso.ADMINISTRADOR);
+        when(usuarioRepository.findByIdAndEmpresaId(10L, 1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.countByEmpresaIdAndRolAccesoAndActivoTrue(1L, RolAcceso.ADMINISTRADOR)).thenReturn(1L);
+
+        assertThrows(ReglaNegocioException.class, () -> usuarioService.actualizar(1L, 10L, null, false));
+
+        assertTrue(usuario.isActivo());
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("UsuarioServiceImpl_desactivar_ultimoAdministrador_lanzaReglaNegocio")
+    void UsuarioServiceImpl_desactivar_ultimoAdministrador_lanzaReglaNegocio() {
+        usuario.setRolAcceso(RolAcceso.ADMINISTRADOR);
+        when(usuarioRepository.findByIdAndEmpresaId(10L, 1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.countByEmpresaIdAndRolAccesoAndActivoTrue(1L, RolAcceso.ADMINISTRADOR)).thenReturn(1L);
+
+        assertThrows(ReglaNegocioException.class, () -> usuarioService.desactivar(1L, 10L));
+
+        assertTrue(usuario.isActivo());
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("UsuarioServiceImpl_actualizar_hayOtroAdministradorActivo_permiteDegradar")
+    void UsuarioServiceImpl_actualizar_hayOtroAdministradorActivo_permiteDegradar() {
+        usuario.setRolAcceso(RolAcceso.ADMINISTRADOR);
+        when(usuarioRepository.findByIdAndEmpresaId(10L, 1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.countByEmpresaIdAndRolAccesoAndActivoTrue(1L, RolAcceso.ADMINISTRADOR)).thenReturn(2L);
+        when(usuarioRepository.save(usuario)).thenReturn(usuario);
+
+        Usuario actualizado = usuarioService.actualizar(1L, 10L, RolAcceso.EDITOR, null);
+
+        assertEquals(RolAcceso.EDITOR, actualizado.getRolAcceso());
+    }
+
+    @Test
+    @DisplayName("UsuarioServiceImpl_actualizar_administradorConservaSuRol_noConsultaElConteo")
+    void UsuarioServiceImpl_actualizar_administradorConservaSuRol_noConsultaElConteo() {
+        usuario.setRolAcceso(RolAcceso.ADMINISTRADOR);
+        when(usuarioRepository.findByIdAndEmpresaId(10L, 1L)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.save(usuario)).thenReturn(usuario);
+
+        usuarioService.actualizar(1L, 10L, RolAcceso.ADMINISTRADOR, true);
+
+        verify(usuarioRepository, never()).countByEmpresaIdAndRolAccesoAndActivoTrue(any(), any());
+    }
+
+    @Test
+    @DisplayName("UsuarioServiceImpl_autenticar_correoInexistente_ejecutaMatchesContraHashFicticio")
+    void UsuarioServiceImpl_autenticar_correoInexistente_ejecutaMatchesContraHashFicticio() {
+        when(usuarioRepository.findByEmailIgnoreCase("nadie@acme.com")).thenReturn(Optional.empty());
+
+        ReglaNegocioException ex = assertThrows(ReglaNegocioException.class,
+                () -> usuarioService.autenticar("nadie@acme.com", "pass"));
+
+        assertEquals("Correo o contrasena incorrectos.", ex.getMessage());
+        verify(passwordEncoder).matches(eq("pass"), startsWith("$2a$10$"));
+    }
+
+    @Test
+    @DisplayName("UsuarioServiceImpl_autenticar_usuarioInactivo_ejecutaMatchesContraHashFicticio")
+    void UsuarioServiceImpl_autenticar_usuarioInactivo_ejecutaMatchesContraHashFicticio() {
+        usuario.setActivo(false);
+        when(usuarioRepository.findByEmailIgnoreCase("juan@acme.com")).thenReturn(Optional.of(usuario));
+
+        assertThrows(ReglaNegocioException.class, () -> usuarioService.autenticar("juan@acme.com", "pass"));
+
+        verify(passwordEncoder).matches(eq("pass"), startsWith("$2a$10$"));
+        verify(passwordEncoder, never()).matches("pass", "hashed");
+    }
+
+    @Test
+    @DisplayName("UsuarioServiceImpl_autenticar_usuarioValido_ejecutaUnSoloMatchesContraSuHash")
+    void UsuarioServiceImpl_autenticar_usuarioValido_ejecutaUnSoloMatchesContraSuHash() {
+        when(usuarioRepository.findByEmailIgnoreCase("juan@acme.com")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("pass", "hashed")).thenReturn(true);
+
+        usuarioService.autenticar("juan@acme.com", "pass");
+
+        verify(passwordEncoder, times(1)).matches(anyString(), anyString());
+    }
 }

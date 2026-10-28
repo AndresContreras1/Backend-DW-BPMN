@@ -8,7 +8,10 @@ import javax.crypto.SecretKey;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.Claims;
@@ -28,8 +31,24 @@ public class JwtService {
     private final SecretKey key;
     private final long expirationSeconds;
 
+    private static final int LONGITUD_MINIMA_SECRETO = 32;
+
+    @Autowired
     public JwtService(@Value("${jwt.secret}") String secret,
-            @Value("${jwt.expiration-seconds}") long expirationSeconds) {
+            @Value("${jwt.expiration-seconds}") long expirationSeconds, Environment environment) {
+        this(secret, expirationSeconds, environment.acceptsProfiles(Profiles.of("prod")));
+    }
+
+    /** Sin perfil de produccion (pruebas, desarrollo): un secreto vacio cae en una clave aleatoria. */
+    public JwtService(String secret, long expirationSeconds) {
+        this(secret, expirationSeconds, false);
+    }
+
+    JwtService(String secret, long expirationSeconds, boolean produccion) {
+        if (produccion && (secret == null || secret.isBlank() || secret.length() < LONGITUD_MINIMA_SECRETO)) {
+            throw new IllegalStateException("JWT_SECRET es obligatorio en el perfil prod y debe tener al menos "
+                    + LONGITUD_MINIMA_SECRETO + " caracteres.");
+        }
         if (secret.isBlank()) {
             log.warn("JWT_SECRET no definido: se usa una clave aleatoria y los tokens se invalidan al reiniciar.");
             this.key = Jwts.SIG.HS256.key().build();

@@ -15,7 +15,7 @@ public interface ProcesoCompartidoRepository extends RepositorioTenant<ProcesoCo
     List<ProcesoCompartido> findAllByProcesoIdAndEmpresaIdAndActivoTrue(Long procesoId, Long empresaId);
 
     @EntityGraph(attributePaths = { "proceso", "empresa", "empresaInvitada" })
-    List<ProcesoCompartido> findAllByEmpresaInvitadaIdAndActivoTrue(Long empresaInvitadaId);
+    List<ProcesoCompartido> findAllByEmpresaInvitadaIdAndActivoTrueAndProceso_ActivoTrue(Long empresaInvitadaId);
 
     @EntityGraph(attributePaths = { "proceso", "empresa" })
     Optional<ProcesoCompartido> findByProcesoIdAndEmpresaInvitadaIdAndActivoTrue(Long procesoId,

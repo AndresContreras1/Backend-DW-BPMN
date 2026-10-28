@@ -87,7 +87,8 @@ class AutorizacionPorRolTest {
             ADMINISTRADOR | DELETE | /api/v1/procesos/{id}          | 404
             EDITOR        | DELETE | /api/v1/procesos/{id}          | 403
 
-            # Modelado: solo el administrador elimina pools, lanes y mensajes (HU-21, HU-22, HU-25)
+            # Modelado: el administrador elimina pools, lanes y mensajes (HU-21, HU-22, HU-25); en pools y lanes
+            # decide PermisoEstructuraService (el editor solo con permiso explicito, ver PermisoEstructuraIntegracionTest)
             ADMINISTRADOR | DELETE | /api/v1/pools/{id}             | 404
             ADMINISTRADOR | DELETE | /api/v1/lanes/{id}             | 404
             ADMINISTRADOR | DELETE | /api/v1/mensajes/{id}          | 404
@@ -106,6 +107,14 @@ class AutorizacionPorRolTest {
             EDITOR        | DELETE | /api/v1/actividades/{id}       | 403
             EDITOR        | DELETE | /api/v1/arcos/{id}             | 403
             EDITOR        | DELETE | /api/v1/gateways/{id}          | 403
+
+            # Permisos de estructura (HU-24): configurarlos es del administrador; consultar los propios, de cualquiera
+            ADMINISTRADOR | GET    | /api/v1/permisos-estructura           | 200
+            EDITOR        | GET    | /api/v1/permisos-estructura           | 403
+            SOLO_LECTURA  | GET    | /api/v1/permisos-estructura           | 403
+            ADMINISTRADOR | GET    | /api/v1/permisos-estructura/mio       | 200
+            EDITOR        | GET    | /api/v1/permisos-estructura/mio       | 200
+            SOLO_LECTURA  | GET    | /api/v1/permisos-estructura/mio       | 200
 
             # Cerrar sesion: cualquier rol (HU-03)
             SOLO_LECTURA  | POST   | /api/v1/auth/logout                   | 204

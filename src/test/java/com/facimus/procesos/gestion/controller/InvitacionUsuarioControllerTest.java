@@ -74,4 +74,18 @@ class InvitacionUsuarioControllerTest {
                     """))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    void crear_sin_email_retorna_400_y_no_llega_al_service() throws Exception {
+        mockMvc.perform(post("/api/v1/usuarios/invitaciones")
+                .with(principal(RolAcceso.ADMINISTRADOR))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"rolAcceso":"EDITOR"}
+                    """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("email")));
+
+        org.mockito.Mockito.verifyNoInteractions(service);
+    }
 }

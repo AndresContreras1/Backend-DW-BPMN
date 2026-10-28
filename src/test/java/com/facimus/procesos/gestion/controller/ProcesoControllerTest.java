@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -55,7 +57,7 @@ class ProcesoControllerTest {
     @DisplayName("GET /api/v1/procesos - listar procesos (200)")
     void listar_procesos() throws Exception {
         ProcesoResponse p = crearProceso(1L, "Ventas", EstadoProceso.BORRADOR, true);
-        given(procesoService.consultarPagina(eq(1L), any(), any(), any(), any(), eq(0)))
+        given(procesoService.consultarPagina(eq(1L), any(), any(), any(), any(), eq(0), eq(10)))
                 .willReturn(new PageResponse<>(List.of(p), 0, 10, 1, 1));
 
         mockMvc.perform(get("/api/v1/procesos").with(principal(RolAcceso.EDITOR)))
@@ -67,7 +69,7 @@ class ProcesoControllerTest {
     @DisplayName("GET /api/v1/procesos?activo=false - filtro de inactivos acepta parametro (200)")
     void listar_procesos_inactivos() throws Exception {
         ProcesoResponse p = crearProceso(1L, "Eliminado", EstadoProceso.BORRADOR, false);
-        given(procesoService.consultarPagina(eq(1L), any(), any(), any(), eq(false), eq(0)))
+        given(procesoService.consultarPagina(eq(1L), any(), any(), any(), eq(false), eq(0), eq(10)))
                 .willReturn(new PageResponse<>(List.of(p), 0, 10, 1, 1));
 
         mockMvc.perform(get("/api/v1/procesos?activo=false").with(principal(RolAcceso.ADMINISTRADOR)))
@@ -145,7 +147,7 @@ class ProcesoControllerTest {
     }
 
     @Test
-    @DisplayName("PATCH /api/v1/procesos/{id}/publicar - publicar proceso (200)")
+    @DisplayName("PATCH /api/v1/procesos/{id} - publicar proceso cambiando el estado (200)")
     void publicar_proceso() throws Exception {
         ProcesoResponse p = crearProceso(1L, "Ventas", EstadoProceso.PUBLICADO, true);
         given(procesoService.cambiarEstado(1L, 1L, 1L, new CambiarEstadoProcesoRequest(EstadoProceso.PUBLICADO)))
@@ -210,6 +212,27 @@ class ProcesoControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.title").isNotEmpty());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/procesos?tamano=25 - el tamano de pagina llega al service (200)")
+    void listar_tamano_personalizado() throws Exception {
+        given(procesoService.consultarPagina(eq(1L), any(), any(), any(), any(), eq(2), eq(25)))
+                .willReturn(new PageResponse<>(List.of(), 2, 25, 0, 0));
+
+        mockMvc.perform(get("/api/v1/procesos?pagina=2&tamano=25").with(principal(RolAcceso.EDITOR)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size").value(25));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "0", "-5", "101" })
+    @DisplayName("GET /api/v1/procesos - tamano fuera de 1..100 retorna ProblemDetail 400")
+    void listar_tamano_fuera_de_rango(String tamano) throws Exception {
+        mockMvc.perform(get("/api/v1/procesos?tamano=" + tamano).with(principal(RolAcceso.EDITOR)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(400));
     }
 
     @Test

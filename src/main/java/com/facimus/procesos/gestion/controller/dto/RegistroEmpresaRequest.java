@@ -13,5 +13,5 @@ public record RegistroEmpresaRequest(
         @NotBlank(message = "El correo del administrador es obligatorio.")
         @Email(message = "El correo del administrador no es valido.") String emailAdmin,
         @NotBlank(message = "La contrasena es obligatoria.")
-        @Size(min = 6, message = "La contrasena debe tener al menos 6 caracteres.") String passwordAdmin) {
+        @Size(min = 8, message = "La contrasena debe tener al menos 8 caracteres.") String passwordAdmin) {
 }

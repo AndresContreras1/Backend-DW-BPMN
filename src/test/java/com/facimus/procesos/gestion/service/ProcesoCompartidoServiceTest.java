@@ -153,4 +153,29 @@ class ProcesoCompartidoServiceTest {
         assertEquals(1, detalle.arcos().size());
         assertEquals(1, detalle.mensajes().size());
     }
+
+    @Test
+    void listarRecibidos_consultaSoloCompartidosActivosDeProcesosActivos() {
+        ProcesoCompartido compartido = new ProcesoCompartido();
+        when(procesoCompartidoRepository.findAllByEmpresaInvitadaIdAndActivoTrueAndProceso_ActivoTrue(2L))
+                .thenReturn(List.of(compartido));
+
+        assertEquals(List.of(compartido), service.listarRecibidos(2L));
+    }
+
+    @Test
+    void obtenerCompartido_procesoInactivo_lanzaNoEncontrado() {
+        proceso.setActivo(false);
+        ProcesoCompartido compartido = new ProcesoCompartido();
+        compartido.setEmpresa(propietaria);
+        compartido.setProceso(proceso);
+        compartido.setEmpresaInvitada(invitada);
+        compartido.setActivo(true);
+        when(procesoCompartidoRepository.findByProcesoIdAndEmpresaInvitadaIdAndActivoTrue(10L, 2L))
+                .thenReturn(Optional.of(compartido));
+
+        assertThrows(RecursoNoEncontradoException.class, () -> service.obtenerCompartido(2L, 10L));
+
+        verifyNoInteractions(procesoDiagramaService);
+    }
 }

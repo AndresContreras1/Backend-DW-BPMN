@@ -1,5 +1,7 @@
 package com.facimus.procesos.security;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.springframework.mock.env.MockEnvironment;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Optional;
@@ -73,6 +75,47 @@ class JwtServiceTest {
     @DisplayName("Sin JWT_SECRET usa una clave aleatoria y los tokens siguen funcionando")
     void JwtService_generarToken_sinSecreto_usaClaveAleatoria() {
         JwtService jwtService = new JwtService("", 1800);
+
+        assertThat(jwtService.validar(jwtService.generarToken(editor))).isPresent();
+    }
+
+    @Test
+    @DisplayName("En perfil prod un JWT_SECRET vacio impide arrancar")
+    void JwtService_constructor_perfilProdConSecretoVacio_lanzaIllegalState() {
+        MockEnvironment prod = new MockEnvironment();
+        prod.setActiveProfiles("prod");
+
+        assertThatThrownBy(() -> new JwtService("", 1800, prod))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("JWT_SECRET");
+    }
+
+    @Test
+    @DisplayName("En perfil prod un JWT_SECRET de menos de 32 caracteres impide arrancar")
+    void JwtService_constructor_perfilProdConSecretoCorto_lanzaIllegalState() {
+        MockEnvironment prod = new MockEnvironment();
+        prod.setActiveProfiles("prod");
+
+        assertThatThrownBy(() -> new JwtService("corto", 1800, prod))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("32");
+    }
+
+    @Test
+    @DisplayName("En perfil prod un JWT_SECRET de 32 caracteres o mas arranca")
+    void JwtService_constructor_perfilProdConSecretoValido_generaTokensValidos() {
+        MockEnvironment prod = new MockEnvironment();
+        prod.setActiveProfiles("prod");
+
+        JwtService jwtService = new JwtService(SECRETO, 1800, prod);
+
+        assertThat(jwtService.validar(jwtService.generarToken(editor))).isPresent();
+    }
+
+    @Test
+    @DisplayName("Sin perfil prod un JWT_SECRET vacio sigue usando una clave aleatoria")
+    void JwtService_constructor_sinPerfilProdConSecretoVacio_usaClaveAleatoria() {
+        JwtService jwtService = new JwtService("", 1800, new MockEnvironment());
 
         assertThat(jwtService.validar(jwtService.generarToken(editor))).isPresent();
     }

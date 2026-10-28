@@ -47,6 +47,16 @@ public class PermisoEstructuraController {
         return ResponseEntity.ok(permisoEstructuraService.consultarPorEmpresa(principal.empresaId()));
     }
 
+    @GetMapping("/mio")
+    @Operation(summary = "Consultar los permisos del propio rol", description = "Cualquier usuario autenticado: devuelve los permisos de estructura de su rol, para que el cliente oculte los botones que no puede usar.")
+    @ApiResponse(responseCode = "200", description = "Operacion exitosa.",
+            content = @Content(schema = @Schema(implementation = PermisoEstructuraResponse.class)))
+    @ApiResponse(responseCode = "401", description = "No autenticado: token ausente o invalido.",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    public ResponseEntity<PermisoEstructuraResponse> mio(@AuthenticationPrincipal ApiPrincipal principal) {
+        return ResponseEntity.ok(permisoEstructuraService.consultarPorRol(principal.empresaId(), principal.rol()));
+    }
+
     @PutMapping("/{rol}")
     @Operation(summary = "Actualizar los permisos de un rol", description = "Define si un rol de acceso puede crear, editar o eliminar pools y lanes.")
     @ApiResponse(responseCode = "200", description = "Operacion exitosa.",

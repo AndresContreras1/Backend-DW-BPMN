@@ -6,7 +6,9 @@ import com.facimus.procesos.gestion.controller.dto.EditarProcesoRequest;
 import com.facimus.procesos.gestion.controller.dto.HistorialCambioResponse;
 import com.facimus.procesos.gestion.controller.dto.ProcesoDetalleResponse;
 import com.facimus.procesos.gestion.controller.dto.ProcesoResponse;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -44,7 +46,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ProcesoServiceImpl implements ProcesoService {
 
-    private static final int TAMANO_PAGINA = 10;
+    private static final int LONGITUD_MAXIMA_HISTORIAL = 255;
+    private static final int LONGITUD_MAXIMA_VALOR = 40;
 
     private final ProcesoRepository procesoRepository;
     private final EmpresaService empresaService;
@@ -56,6 +59,8 @@ public class ProcesoServiceImpl implements ProcesoService {
     @Transactional
     @Override
     public Proceso crear(Long empresaId, Long usuarioId, String nombre, String descripcion, String categoria) {
+        nombre = recortar(nombre);
+        categoria = recortar(categoria);
         if (procesoRepository.existsByEmpresaIdAndNombreIgnoreCaseAndActivoTrue(empresaId, nombre)) {
             throw new ReglaNegocioException("Ya existe un proceso activo con el nombre \"" + nombre + "\" en esta empresa.");
         }
@@ -82,6 +87,8 @@ public class ProcesoServiceImpl implements ProcesoService {
     @Override
     public Proceso editarDatos(Long empresaId, Long procesoId, Long usuarioId, String nombre, String descripcion,
             String categoria) {
+        nombre = recortar(nombre);
+        categoria = recortar(categoria);
         Proceso proceso = obtener(empresaId, procesoId);
         Usuario autor = usuarioService.obtener(empresaId, usuarioId);
 
@@ -90,13 +97,20 @@ public class ProcesoServiceImpl implements ProcesoService {
             throw new ReglaNegocioException("Ya existe un proceso activo con el nombre \"" + nombre + "\" en esta empresa.");
         }
 
+        List<String> cambios = new ArrayList<>();
+        registrarCambio(cambios, "nombre", proceso.getNombre(), nombre);
+        registrarCambio(cambios, "descripcion", proceso.getDescripcion(), descripcion);
+        registrarCambio(cambios, "categoria", proceso.getCategoria(), categoria);
+
         proceso.setNombre(nombre);
         proceso.setDescripcion(descripcion);
         proceso.setCategoria(categoria);
         proceso.setFechaModificacion(LocalDateTime.now());
         proceso = procesoRepository.save(proceso);
 
-        historialCambioService.registrar(proceso, autor, "Proceso editado.");
+        String detalle = cambios.isEmpty() ? "Proceso editado sin cambios en los datos."
+                : "Proceso editado. " + String.join("; ", cambios) + ".";
+        historialCambioService.registrar(proceso, autor, limitar(detalle, LONGITUD_MAXIMA_HISTORIAL));
         return proceso;
     }
 
@@ -121,12 +135,14 @@ public class ProcesoServiceImpl implements ProcesoService {
         }
         Usuario autor = usuarioService.obtener(empresaId, usuarioId);
 
+        EstadoProceso estadoAnterior = proceso.getEstado();
         proceso.setEstado(nuevoEstado);
         proceso.setFechaModificacion(LocalDateTime.now());
         proceso = procesoRepository.save(proceso);
 
-        historialCambioService.registrar(proceso, autor,
-                nuevoEstado == EstadoProceso.PUBLICADO ? "Proceso publicado." : "Estado del proceso actualizado.");
+        historialCambioService.registrar(proceso, autor, nuevoEstado == EstadoProceso.PUBLICADO
+                ? "Proceso publicado (estado: " + estadoAnterior + " → " + nuevoEstado + ")."
+                : "Estado del proceso actualizado: " + estadoAnterior + " → " + nuevoEstado + ".");
         return proceso;
     }
 
@@ -176,6 +192,32 @@ public class ProcesoServiceImpl implements ProcesoService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("Proceso no encontrado."));
     }
 
+    /** Carga para solo lectura: un proceso eliminado (inactivo) sigue pudiendo consultarse. */
+    @Transactional(readOnly = true)
+    @Override
+    public Proceso obtenerParaConsulta(Long empresaId, Long procesoId) {
+        return procesoRepository.findByIdAndEmpresaId(procesoId, empresaId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Proceso no encontrado."));
+    }
+
+    private static String recortar(String texto) {
+        return texto == null ? null : texto.trim();
+    }
+
+    private static void registrarCambio(List<String> cambios, String campo, String anterior, String nuevo) {
+        if (!Objects.equals(anterior, nuevo)) {
+            cambios.add(campo + ": \"" + limitar(anterior, LONGITUD_MAXIMA_VALOR) + "\" → \""
+                    + limitar(nuevo, LONGITUD_MAXIMA_VALOR) + "\"");
+        }
+    }
+
+    private static String limitar(String texto, int maximo) {
+        if (texto == null) {
+            return "";
+        }
+        return texto.length() <= maximo ? texto : texto.substring(0, maximo - 1) + "…";
+    }
+
     @Transactional
     @Override
     public ProcesoResponse editarDatos(Long empresaId, Long procesoId, Long usuarioId, EditarProcesoRequest request) {
@@ -195,9 +237,9 @@ public class ProcesoServiceImpl implements ProcesoService {
     @Transactional(readOnly = true)
     @Override
     public PageResponse<ProcesoResponse> consultarPagina(Long empresaId, String nombre, EstadoProceso estado,
-            String categoria, Boolean activo, int pagina) {
+            String categoria, Boolean activo, int pagina, int tamano) {
         Page<ProcesoResponse> procesos = buscar(empresaId, nombre, estado, categoria, activo,
-                PageRequest.of(pagina, TAMANO_PAGINA, Sort.by("fechaModificacion").descending()))
+                PageRequest.of(pagina, tamano, Sort.by("fechaModificacion").descending()))
                 .map(p -> modelMapper.map(p, ProcesoResponse.class));
         return PageResponse.from(procesos);
     }
@@ -205,7 +247,7 @@ public class ProcesoServiceImpl implements ProcesoService {
     @Transactional(readOnly = true)
     @Override
     public ProcesoDetalleResponse consultarDetalle(Long empresaId, Long procesoId) {
-        Proceso proceso = obtener(empresaId, procesoId);
+        Proceso proceso = obtenerParaConsulta(empresaId, procesoId);
         List<HistorialCambioResponse> historial = historialCambioService.listarPorProceso(empresaId, procesoId)
                 .stream()
                 .map(h -> modelMapper.map(h, HistorialCambioResponse.class))
@@ -216,7 +258,7 @@ public class ProcesoServiceImpl implements ProcesoService {
     @Transactional(readOnly = true)
     @Override
     public List<HistorialCambioResponse> consultarHistorial(Long empresaId, Long procesoId) {
-        obtener(empresaId, procesoId);
+        obtenerParaConsulta(empresaId, procesoId);
         return historialCambioService.listarPorProceso(empresaId, procesoId).stream()
                 .map(h -> modelMapper.map(h, HistorialCambioResponse.class))
                 .toList();

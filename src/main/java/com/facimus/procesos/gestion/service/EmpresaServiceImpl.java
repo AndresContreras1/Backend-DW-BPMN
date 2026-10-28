@@ -26,7 +26,8 @@ public class EmpresaServiceImpl implements EmpresaService {
 
     @Transactional
     @Override
-    public Empresa registrar(String nombre, String nit, String correoContacto) {
+    public Empresa registrar(String nombre, String nitIngresado, String correoContacto) {
+        String nit = normalizarNit(nitIngresado);
         if (empresaRepository.existsByNit(nit)) {
             throw new ReglaNegocioException("Ya existe una empresa registrada con el NIT " + nit + ".");
         }
@@ -49,6 +50,11 @@ public class EmpresaServiceImpl implements EmpresaService {
     @Transactional(readOnly = true)
     @Override
     public Optional<Empresa> buscarPorNit(String nit) {
-        return empresaRepository.findByNit(nit);
+        return empresaRepository.findByNit(normalizarNit(nit));
+    }
+
+    /** NIT sin espacios ni puntos y en mayusculas, para que "900.123.456-7" y "900123456-7" sean el mismo. */
+    private static String normalizarNit(String nit) {
+        return nit == null ? null : nit.trim().replaceAll("\\s+", "").replace(".", "").toUpperCase();
     }
 }

@@ -35,6 +35,6 @@ public class HistorialCambioServiceImpl implements HistorialCambioService {
     @Transactional(readOnly = true)
     @Override
     public List<HistorialCambio> listarPorProceso(Long empresaId, Long procesoId) {
-        return historialCambioRepository.findAllByProcesoIdAndEmpresaIdOrderByFechaCambioDesc(procesoId, empresaId);
+        return historialCambioRepository.findAllByProcesoIdAndEmpresaIdOrderByFechaCambioDescIdDesc(procesoId, empresaId);
     }
 }

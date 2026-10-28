@@ -152,7 +152,7 @@ class ProcesoServicesResponseTest {
                 .buscar(any(), any(), any(), any(), any(), any(Pageable.class));
 
         PageResponse<ProcesoResponse> respuesta = procesoService.consultarPagina(1L, "Ven",
-                EstadoProceso.BORRADOR, "Operativo", true, 2);
+                EstadoProceso.BORRADOR, "Operativo", true, 2, 25);
 
         assertThat(respuesta.content()).containsExactly(respuestaEsperada(EstadoProceso.BORRADOR, "Ventas"));
         assertThat(respuesta.totalElements()).isEqualTo(1);
@@ -162,13 +162,13 @@ class ProcesoServicesResponseTest {
                 eq("Operativo"), eq(true),
                 captor.capture());
         assertThat(captor.getValue().getPageNumber()).isEqualTo(2);
-        assertThat(captor.getValue().getPageSize()).isEqualTo(10);
+        assertThat(captor.getValue().getPageSize()).isEqualTo(25);
         assertThat(captor.getValue().getSort().getOrderFor("fechaModificacion").isDescending()).isTrue();
     }
 
     @Test
     void ProcesoServiceImpl_consultarDetalle_procesoExiste_devuelveProcesoEHistorial() {
-        doReturn(proceso).when(procesoService).obtener(1L, 5L);
+        doReturn(proceso).when(procesoService).obtenerParaConsulta(1L, 5L);
         given(historialCambioService.listarPorProceso(1L, 5L)).willReturn(List.of(historial(3L, "Creado")));
 
         ProcesoDetalleResponse respuesta = procesoService.consultarDetalle(1L, 5L);
@@ -179,7 +179,7 @@ class ProcesoServicesResponseTest {
 
     @Test
     void ProcesoServiceImpl_consultarDetalle_procesoNoExiste_lanzaExcepcionSinConsultarHistorial() {
-        doThrow(new RecursoNoEncontradoException("Proceso no encontrado.")).when(procesoService).obtener(1L, 99L);
+        doThrow(new RecursoNoEncontradoException("Proceso no encontrado.")).when(procesoService).obtenerParaConsulta(1L, 99L);
 
         assertThatThrownBy(() -> procesoService.consultarDetalle(1L, 99L))
                 .isInstanceOf(RecursoNoEncontradoException.class);
@@ -189,7 +189,7 @@ class ProcesoServicesResponseTest {
 
     @Test
     void ProcesoServiceImpl_consultarHistorial_procesoExiste_devuelveHistorialResponse() {
-        doReturn(proceso).when(procesoService).obtener(1L, 5L);
+        doReturn(proceso).when(procesoService).obtenerParaConsulta(1L, 5L);
         given(historialCambioService.listarPorProceso(1L, 5L))
                 .willReturn(List.of(historial(3L, "Creado"), historial(4L, "Editado")));
 
@@ -201,7 +201,7 @@ class ProcesoServicesResponseTest {
 
     @Test
     void ProcesoServiceImpl_consultarHistorial_procesoNoExiste_lanzaExcepcion() {
-        doThrow(new RecursoNoEncontradoException("Proceso no encontrado.")).when(procesoService).obtener(1L, 99L);
+        doThrow(new RecursoNoEncontradoException("Proceso no encontrado.")).when(procesoService).obtenerParaConsulta(1L, 99L);
 
         assertThatThrownBy(() -> procesoService.consultarHistorial(1L, 99L))
                 .isInstanceOf(RecursoNoEncontradoException.class);

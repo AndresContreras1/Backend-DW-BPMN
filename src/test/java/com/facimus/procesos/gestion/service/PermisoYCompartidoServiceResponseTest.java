@@ -165,4 +165,30 @@ class PermisoYCompartidoServiceResponseTest {
         assertThat(respuesta.pools()).isEmpty();
         assertThat(respuesta.mensajes()).isEmpty();
     }
+
+    @Test
+    void ProcesoCompartidoServiceImpl_consultarCompartido_conLane_noExponeElIdDelRolDeLaPropietaria() {
+        com.facimus.procesos.modelado.model.Pool pool = new com.facimus.procesos.modelado.model.Pool();
+        pool.setId(20L);
+        pool.setProceso(compartido.getProceso());
+        com.facimus.procesos.gestion.model.RolProceso rol = new com.facimus.procesos.gestion.model.RolProceso();
+        rol.setId(99L);
+        rol.setNombre("Analista");
+        com.facimus.procesos.modelado.model.Lane lane = new com.facimus.procesos.modelado.model.Lane();
+        lane.setId(21L);
+        lane.setNombre("Analisis");
+        lane.setOrden(1);
+        lane.setPool(pool);
+        lane.setRolProceso(rol);
+        ProcesoCompartidoDetalle detalle = new ProcesoCompartidoDetalle(compartido.getProceso(), compartido,
+                List.of(pool), List.of(lane), List.of(), List.of(), List.of(), List.of(), List.of());
+        doReturn(detalle).when(compartidos).obtenerCompartido(2L, 10L);
+
+        ProcesoCompartidoDetalleResponse respuesta = compartidos.consultarCompartido(2L, 10L);
+
+        assertThat(respuesta.lanes()).containsExactly(
+                new com.facimus.procesos.gestion.controller.dto.LaneCompartidaResponse(21L, "Analisis", 1, 20L, "Analista"));
+        assertThat(com.facimus.procesos.gestion.controller.dto.LaneCompartidaResponse.class.getRecordComponents())
+                .extracting(java.lang.reflect.RecordComponent::getName).doesNotContain("rolProcesoId");
+    }
 }

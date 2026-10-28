@@ -89,7 +89,7 @@ public class ProcesoCompartidoServiceImpl implements ProcesoCompartidoService {
     @Transactional(readOnly = true)
     @Override
     public List<ProcesoCompartido> listarRecibidos(Long empresaInvitadaId) {
-        return procesoCompartidoRepository.findAllByEmpresaInvitadaIdAndActivoTrue(empresaInvitadaId);
+        return procesoCompartidoRepository.findAllByEmpresaInvitadaIdAndActivoTrueAndProceso_ActivoTrue(empresaInvitadaId);
     }
 
     @Transactional(readOnly = true)
@@ -98,6 +98,9 @@ public class ProcesoCompartidoServiceImpl implements ProcesoCompartidoService {
         ProcesoCompartido compartido = procesoCompartidoRepository
                 .findByProcesoIdAndEmpresaInvitadaIdAndActivoTrue(procesoId, empresaInvitadaId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Proceso compartido no encontrado."));
+        if (!compartido.getProceso().isActivo()) {
+            throw new RecursoNoEncontradoException("Proceso compartido no encontrado.");
+        }
         Long empresaPropietariaId = compartido.getEmpresa().getId();
         ProcesoDiagrama diagrama = procesoDiagramaService.obtener(empresaPropietariaId, procesoId);
         return new ProcesoCompartidoDetalle(compartido.getProceso(), compartido,
