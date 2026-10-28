@@ -17,6 +17,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.facimus.procesos.common.ReglaNegocioException;
@@ -27,7 +28,6 @@ import com.facimus.procesos.gestion.model.EstadoProceso;
 import com.facimus.procesos.gestion.model.Proceso;
 import com.facimus.procesos.gestion.model.Usuario;
 import com.facimus.procesos.gestion.repository.ProcesoRepository;
-import com.facimus.procesos.gestion.repository.ProcesoSpecifications;
 
 import lombok.RequiredArgsConstructor;
 
@@ -147,8 +147,19 @@ public class ProcesoServiceImpl implements ProcesoService {
     @Override
     public Page<Proceso> buscar(Long empresaId, String nombre, EstadoProceso estado, String categoria,
             Boolean activo, Pageable pageable) {
-        return procesoRepository.findAll(
-                ProcesoSpecifications.conFiltros(empresaId, nombre, estado, categoria, activo), pageable);
+        boolean filtrarCategoria = StringUtils.hasText(categoria);
+        return procesoRepository.buscarConFiltros(empresaId, activo == null || activo,
+                patronDeBusqueda(nombre), estado != null, estado != null ? estado : EstadoProceso.BORRADOR,
+                filtrarCategoria, filtrarCategoria ? categoria.trim().toLowerCase() : "", pageable);
+    }
+
+    /** Fragmento en minusculas rodeado de %, con los comodines del usuario escapados con '!'. */
+    private static String patronDeBusqueda(String nombre) {
+        if (!StringUtils.hasText(nombre)) {
+            return "%";
+        }
+        String escapado = nombre.trim().toLowerCase().replace("!", "!!").replace("%", "!%").replace("_", "!_");
+        return "%" + escapado + "%";
     }
 
     @Transactional(readOnly = true)
