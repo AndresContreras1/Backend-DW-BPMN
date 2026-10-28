@@ -9,11 +9,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import org.modelmapper.ModelMapper;
 
 import com.facimus.procesos.gestion.controller.dto.EmpresaResponse;
 import com.facimus.procesos.gestion.controller.dto.RegistroEmpresaRequest;
-import com.facimus.procesos.gestion.model.Empresa;
 import com.facimus.procesos.gestion.service.EmpresaOrquestadorService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,7 +34,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 public class EmpresaController {
 
     private final EmpresaOrquestadorService empresaOrquestadorService;
-    private final ModelMapper modelMapper;
 
     @SecurityRequirements()
     @PostMapping
@@ -48,11 +45,9 @@ public class EmpresaController {
     @ApiResponse(responseCode = "409", description = "Conflicto: la operacion viola una regla de negocio.",
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<EmpresaResponse> registrar(@Validated @RequestBody RegistroEmpresaRequest request) {
-        Empresa empresa = empresaOrquestadorService.registrarConAdministrador(request.nombreEmpresa(),
-                request.nit(), request.correoContacto(), request.nombreAdmin(), request.emailAdmin(),
-                request.passwordAdmin());
+        EmpresaResponse empresa = empresaOrquestadorService.registrarConAdministrador(request);
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentContextPath()
-                        .path("/api/v1/empresas/{id}").buildAndExpand(empresa.getId()).toUri())
-        .body(modelMapper.map(empresa, EmpresaResponse.class));
+                        .path("/api/v1/empresas/{id}").buildAndExpand(empresa.id()).toUri())
+                .body(empresa);
     }
 }

@@ -2,10 +2,6 @@ package com.facimus.procesos.gestion.controller;
 
 import java.util.List;
 
-import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
@@ -31,18 +27,9 @@ import com.facimus.procesos.gestion.controller.dto.ProcesoDiagramaResponse;
 import com.facimus.procesos.gestion.controller.dto.ProcesoRequest;
 import com.facimus.procesos.gestion.controller.dto.ProcesoResponse;
 import com.facimus.procesos.gestion.model.EstadoProceso;
-import com.facimus.procesos.gestion.model.Proceso;
-import com.facimus.procesos.gestion.service.HistorialCambioService;
 import com.facimus.procesos.gestion.service.ProcesoDiagramaService;
 import com.facimus.procesos.gestion.service.ProcesoOrquestadorService;
 import com.facimus.procesos.gestion.service.ProcesoService;
-import com.facimus.procesos.modelado.controller.dto.ActividadResponse;
-import com.facimus.procesos.modelado.controller.dto.ArcoResponse;
-import com.facimus.procesos.modelado.controller.dto.EventoMensajeResponse;
-import com.facimus.procesos.modelado.controller.dto.GatewayResponse;
-import com.facimus.procesos.modelado.controller.dto.LaneResponse;
-import com.facimus.procesos.modelado.controller.dto.MensajeResponse;
-import com.facimus.procesos.modelado.controller.dto.PoolResponse;
 import com.facimus.procesos.security.ApiPrincipal;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -63,13 +50,9 @@ import jakarta.validation.constraints.Min;
 @RequiredArgsConstructor
 public class ProcesoController {
 
-    private static final int TAMANO_PAGINA = 10;
-
     private final ProcesoService procesoService;
     private final ProcesoOrquestadorService procesoOrquestadorService;
-    private final HistorialCambioService historialCambioService;
     private final ProcesoDiagramaService procesoDiagramaService;
-    private final ModelMapper modelMapper;
 
     @GetMapping
     @Operation(summary = "Buscar procesos de la empresa", description = "Soporta filtros por nombre, estado, categoria y activo, con paginacion.")
@@ -86,11 +69,8 @@ public class ProcesoController {
             @RequestParam(required = false) Boolean activo,
             @RequestParam(defaultValue = "0") @Min(value = 0, message = "La página no puede ser negativa.") int pagina,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        Long empresaId = principal.empresaId();
-        Page<ProcesoResponse> procesos = procesoService.buscar(empresaId, nombre, estado, categoria, activo,
-                        PageRequest.of(pagina, TAMANO_PAGINA, Sort.by("fechaModificacion").descending()))
-                .map(p -> modelMapper.map(p, ProcesoResponse.class));
-        return ResponseEntity.ok(PageResponse.from(procesos));
+        return ResponseEntity.ok(procesoService.consultarPagina(principal.empresaId(), nombre, estado,
+                categoria, activo, pagina));
     }
 
     @PostMapping
@@ -105,13 +85,11 @@ public class ProcesoController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<ProcesoResponse> crear(@Validated @RequestBody ProcesoRequest request,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        Long empresaId = principal.empresaId();
-        Long usuarioId = principal.usuarioId();
-        Proceso proceso = procesoOrquestadorService.crearConPoolInicial(empresaId, usuarioId, request.nombre(),
-                request.descripcion(), request.categoria());
+        ProcesoResponse proceso = procesoOrquestadorService.crearConPoolInicial(principal.empresaId(),
+                principal.usuarioId(), request);
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentContextPath()
-                        .path("/api/v1/procesos/{id}").buildAndExpand(proceso.getId()).toUri())
-                .body(modelMapper.map(proceso, ProcesoResponse.class));
+                        .path("/api/v1/procesos/{id}").buildAndExpand(proceso.id()).toUri())
+                .body(proceso);
     }
 
     @GetMapping("/{id}")
@@ -124,13 +102,7 @@ public class ProcesoController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<ProcesoDetalleResponse> detalle(@PathVariable Long id,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        Long empresaId = principal.empresaId();
-        Proceso proceso = procesoService.obtener(empresaId, id);
-        List<HistorialCambioResponse> historial = historialCambioService.listarPorProceso(empresaId, id).stream()
-                .map(h -> modelMapper.map(h, HistorialCambioResponse.class))
-                .toList();
-        return ResponseEntity.ok(new ProcesoDetalleResponse(
-                modelMapper.map(proceso, ProcesoResponse.class), historial));
+        return ResponseEntity.ok(procesoService.consultarDetalle(principal.empresaId(), id));
     }
 
     @PutMapping("/{id}")
@@ -147,11 +119,8 @@ public class ProcesoController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<ProcesoResponse> editar(@PathVariable Long id,
             @Validated @RequestBody EditarProcesoRequest request, @AuthenticationPrincipal ApiPrincipal principal) {
-        Long empresaId = principal.empresaId();
-        Long usuarioId = principal.usuarioId();
-        Proceso proceso = procesoService.editarDatos(empresaId, id, usuarioId, request.nombre(), request.descripcion(),
-                request.categoria());
-        return ResponseEntity.ok(modelMapper.map(proceso, ProcesoResponse.class));
+        return ResponseEntity.ok(procesoService.editarDatos(principal.empresaId(), id, principal.usuarioId(),
+                request));
     }
 
     @PatchMapping("/{id}")
@@ -171,10 +140,8 @@ public class ProcesoController {
     public ResponseEntity<ProcesoResponse> cambiarEstado(@PathVariable Long id,
             @Validated @RequestBody CambiarEstadoProcesoRequest request,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        Long empresaId = principal.empresaId();
-        Long usuarioId = principal.usuarioId();
-        Proceso proceso = procesoService.cambiarEstado(empresaId, id, usuarioId, request.estado());
-        return ResponseEntity.ok(modelMapper.map(proceso, ProcesoResponse.class));
+        return ResponseEntity.ok(procesoService.cambiarEstado(principal.empresaId(), id, principal.usuarioId(),
+                request));
     }
 
     @GetMapping("/{id}/diagrama")
@@ -187,16 +154,7 @@ public class ProcesoController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<ProcesoDiagramaResponse> diagrama(@PathVariable Long id,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        var diagrama = procesoDiagramaService.obtener(principal.empresaId(), id);
-        return ResponseEntity.ok(new ProcesoDiagramaResponse(
-                modelMapper.map(diagrama.proceso(), ProcesoResponse.class),
-                diagrama.pools().stream().map(p -> modelMapper.map(p, PoolResponse.class)).toList(),
-                diagrama.lanes().stream().map(l -> modelMapper.map(l, LaneResponse.class)).toList(),
-                diagrama.actividades().stream().map(a -> modelMapper.map(a, ActividadResponse.class)).toList(),
-                diagrama.gateways().stream().map(g -> modelMapper.map(g, GatewayResponse.class)).toList(),
-                diagrama.eventos().stream().map(e -> modelMapper.map(e, EventoMensajeResponse.class)).toList(),
-                diagrama.arcos().stream().map(a -> modelMapper.map(a, ArcoResponse.class)).toList(),
-                diagrama.mensajes().stream().map(m -> modelMapper.map(m, MensajeResponse.class)).toList()));
+        return ResponseEntity.ok(procesoDiagramaService.consultarDiagrama(principal.empresaId(), id));
     }
 
     @GetMapping("/{id}/historial")
@@ -209,11 +167,7 @@ public class ProcesoController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<List<HistorialCambioResponse>> historial(@PathVariable Long id,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        Long empresaId = principal.empresaId();
-        procesoService.obtener(empresaId, id);
-        return ResponseEntity.ok(historialCambioService.listarPorProceso(empresaId, id).stream()
-                .map(h -> modelMapper.map(h, HistorialCambioResponse.class))
-                .toList());
+        return ResponseEntity.ok(procesoService.consultarHistorial(principal.empresaId(), id));
     }
 
     @DeleteMapping("/{id}")
@@ -226,9 +180,7 @@ public class ProcesoController {
     @ApiResponse(responseCode = "404", description = "El recurso solicitado no existe.",
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<Void> eliminar(@PathVariable Long id, @AuthenticationPrincipal ApiPrincipal principal) {
-        Long empresaId = principal.empresaId();
-        Long usuarioId = principal.usuarioId();
-        procesoService.eliminarLogico(empresaId, id, usuarioId);
+        procesoService.eliminarLogico(principal.empresaId(), id, principal.usuarioId());
         return ResponseEntity.noContent().build();
     }
 }

@@ -1,5 +1,7 @@
 package com.facimus.procesos.modelado.service;
 
+import com.facimus.procesos.modelado.controller.dto.LaneResponse;
+import com.facimus.procesos.modelado.controller.dto.ReordenarLanesRequest;
 import java.util.List;
 import com.facimus.procesos.gestion.model.RolProceso;
 import com.facimus.procesos.modelado.model.Lane;
@@ -27,4 +29,10 @@ public interface LaneService {
     void eliminarPorPool(Long empresaId, Long poolId);
 
     boolean existe(Long empresaId, Long laneId);
+
+    List<LaneResponse> reordenar(Long empresaId, Long poolId, ReordenarLanesRequest request);
+
+    List<LaneResponse> consultarPorPool(Long empresaId, Long poolId);
+
+    LaneResponse consultarDetalle(Long empresaId, Long laneId);
 }

@@ -2,7 +2,6 @@ package com.facimus.procesos.gestion.controller;
 
 import java.util.List;
 
-import org.springframework.data.domain.PageRequest;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -19,13 +18,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import org.modelmapper.ModelMapper;
 
 import com.facimus.procesos.common.api.PageResponse;
 import com.facimus.procesos.gestion.controller.dto.RolProcesoConsultaResponse;
 import com.facimus.procesos.gestion.controller.dto.RolProcesoRequest;
 import com.facimus.procesos.gestion.controller.dto.RolProcesoVistaResponse;
-import com.facimus.procesos.gestion.model.RolProceso;
 import com.facimus.procesos.gestion.service.RolProcesoService;
 import com.facimus.procesos.security.ApiPrincipal;
 
@@ -47,7 +44,6 @@ import lombok.RequiredArgsConstructor;
 public class RolProcesoController {
 
     private final RolProcesoService rolProcesoService;
-    private final ModelMapper modelMapper;
 
     @GetMapping
     @Operation(summary = "Listar los roles de proceso de la empresa", description = "Indica para cada rol cuantos procesos lo usan.")
@@ -56,11 +52,7 @@ public class RolProcesoController {
     @ApiResponse(responseCode = "401", description = "No autenticado: token ausente o invalido.",
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<List<RolProcesoVistaResponse>> listar(@AuthenticationPrincipal ApiPrincipal principal) {
-        Long empresaId = principal.empresaId();
-        List<RolProcesoVistaResponse> roles = rolProcesoService.listarConUso(empresaId).stream()
-                .map(v -> modelMapper.map(v, RolProcesoVistaResponse.class))
-                .toList();
-        return ResponseEntity.ok(roles);
+        return ResponseEntity.ok(rolProcesoService.consultarConUso(principal.empresaId()));
     }
 
     @GetMapping("/consulta")
@@ -73,11 +65,7 @@ public class RolProcesoController {
             @RequestParam(required = false) String nombre,
             @RequestParam(defaultValue = "0") int pagina,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        final int tamano = 10;
-        var page = rolProcesoService.buscarConProcesos(
-                principal.empresaId(), nombre, PageRequest.of(pagina, tamano))
-                .map(consulta -> modelMapper.map(consulta, RolProcesoConsultaResponse.class));
-        return ResponseEntity.ok(PageResponse.from(page));
+        return ResponseEntity.ok(rolProcesoService.consultarPagina(principal.empresaId(), nombre, pagina));
     }
 
     @PostMapping
@@ -94,11 +82,10 @@ public class RolProcesoController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<RolProcesoVistaResponse> crear(@Validated @RequestBody RolProcesoRequest request,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        Long empresaId = principal.empresaId();
-        RolProceso rol = rolProcesoService.crear(empresaId, request.nombre(), request.descripcion());
+        RolProcesoVistaResponse rol = rolProcesoService.crear(principal.empresaId(), request);
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentContextPath()
-                        .path("/api/v1/roles/{id}").buildAndExpand(rol.getId()).toUri())
-                .body(new RolProcesoVistaResponse(rol.getId(), rol.getNombre(), rol.getDescripcion(), 0, false));
+                        .path("/api/v1/roles/{id}").buildAndExpand(rol.id()).toUri())
+                .body(rol);
     }
 
     @GetMapping("/{id}")
@@ -111,11 +98,7 @@ public class RolProcesoController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<RolProcesoVistaResponse> obtener(@PathVariable Long id,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        Long empresaId = principal.empresaId();
-        RolProceso rol = rolProcesoService.obtener(empresaId, id);
-        long usos = rolProcesoService.contarUsos(empresaId, id);
-        return ResponseEntity.ok(new RolProcesoVistaResponse(
-                rol.getId(), rol.getNombre(), rol.getDescripcion(), usos, usos > 0));
+        return ResponseEntity.ok(rolProcesoService.consultarDetalle(principal.empresaId(), id));
     }
 
     @PutMapping("/{id}")
@@ -134,11 +117,7 @@ public class RolProcesoController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<RolProcesoVistaResponse> editar(@PathVariable Long id,
             @Validated @RequestBody RolProcesoRequest request, @AuthenticationPrincipal ApiPrincipal principal) {
-        Long empresaId = principal.empresaId();
-        RolProceso rol = rolProcesoService.editar(empresaId, id, request.nombre(), request.descripcion());
-        long usos = rolProcesoService.contarUsos(empresaId, id);
-        return ResponseEntity.ok(
-                new RolProcesoVistaResponse(rol.getId(), rol.getNombre(), rol.getDescripcion(), usos, usos > 0));
+        return ResponseEntity.ok(rolProcesoService.editar(principal.empresaId(), id, request));
     }
 
     @DeleteMapping("/{id}")
@@ -153,8 +132,7 @@ public class RolProcesoController {
     @ApiResponse(responseCode = "409", description = "Conflicto: la operacion viola una regla de negocio.",
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<Void> eliminar(@PathVariable Long id, @AuthenticationPrincipal ApiPrincipal principal) {
-        Long empresaId = principal.empresaId();
-        rolProcesoService.eliminar(empresaId, id);
+        rolProcesoService.eliminar(principal.empresaId(), id);
         return ResponseEntity.noContent().build();
     }
 }

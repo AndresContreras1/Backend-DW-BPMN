@@ -11,18 +11,16 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.facimus.procesos.config.ModelMapperConfig;
-import com.facimus.procesos.gestion.model.PermisoEstructura;
+import com.facimus.procesos.gestion.controller.dto.PermisoEstructuraRequest;
+import com.facimus.procesos.gestion.controller.dto.PermisoEstructuraResponse;
 import com.facimus.procesos.gestion.model.RolAcceso;
 import com.facimus.procesos.gestion.service.PermisoEstructuraService;
 
 @WebMvcTest(PermisoEstructuraController.class)
-@Import(ModelMapperConfig.class)
 class PermisoEstructuraControllerTest {
 
     @Autowired MockMvc mockMvc;
@@ -30,8 +28,8 @@ class PermisoEstructuraControllerTest {
 
     @Test
     void listar_retorna_permisos() throws Exception {
-        PermisoEstructura p = permiso(RolAcceso.ADMINISTRADOR);
-        given(service.listar(1L)).willReturn(List.of(p));
+        PermisoEstructuraResponse p = permiso(RolAcceso.ADMINISTRADOR, false);
+        given(service.consultarPorEmpresa(1L)).willReturn(List.of(p));
 
         mockMvc.perform(get("/api/v1/permisos-estructura")
                 .with(principal(RolAcceso.ADMINISTRADOR)))
@@ -42,10 +40,8 @@ class PermisoEstructuraControllerTest {
 
     @Test
     void actualizar_retorna_configuracion() throws Exception {
-        PermisoEstructura p = permiso(RolAcceso.EDITOR);
-        p.setEliminarPool(true);
-        given(service.actualizar(eq(1L), eq(RolAcceso.EDITOR),
-                anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean()))
+        PermisoEstructuraResponse p = permiso(RolAcceso.EDITOR, true);
+        given(service.actualizar(eq(1L), eq(RolAcceso.EDITOR), any(PermisoEstructuraRequest.class)))
                 .willReturn(p);
 
         mockMvc.perform(put("/api/v1/permisos-estructura/EDITOR")
@@ -67,13 +63,7 @@ class PermisoEstructuraControllerTest {
                 .andExpect(status().isForbidden());
     }
 
-    private PermisoEstructura permiso(RolAcceso rol) {
-        PermisoEstructura p = new PermisoEstructura();
-        p.setRolAcceso(rol);
-        p.setCrearPool(true);
-        p.setEditarPool(true);
-        p.setCrearLane(true);
-        p.setEditarLane(true);
-        return p;
+    private PermisoEstructuraResponse permiso(RolAcceso rol, boolean eliminarPool) {
+        return new PermisoEstructuraResponse(rol, true, true, eliminarPool, true, true, false);
     }
 }

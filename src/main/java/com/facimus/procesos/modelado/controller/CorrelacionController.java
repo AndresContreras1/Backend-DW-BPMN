@@ -11,11 +11,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.modelmapper.ModelMapper;
 
 import com.facimus.procesos.modelado.controller.dto.CorrelacionRequest;
 import com.facimus.procesos.modelado.controller.dto.CorrelacionResponse;
-import com.facimus.procesos.modelado.model.Correlacion;
 import com.facimus.procesos.modelado.service.CorrelacionOrquestadorService;
 import com.facimus.procesos.modelado.service.CorrelacionService;
 import com.facimus.procesos.security.ApiPrincipal;
@@ -39,7 +37,6 @@ public class CorrelacionController {
 
     private final CorrelacionService correlacionService;
     private final CorrelacionOrquestadorService correlacionOrquestadorService;
-    private final ModelMapper modelMapper;
 
     @PutMapping
     @Operation(summary = "Definir la clave de correlacion de un mensaje", description = "Operacion de upsert; valida que no sea ambigua con otros mensajes del proceso.")
@@ -58,8 +55,7 @@ public class CorrelacionController {
     public ResponseEntity<CorrelacionResponse> definir(@PathVariable Long mensajeId,
             @Validated @RequestBody CorrelacionRequest request, @AuthenticationPrincipal ApiPrincipal principal) {
         Long empresaId = principal.empresaId();
-        Correlacion correlacion = correlacionOrquestadorService.definir(empresaId, mensajeId, request.criterio());
-        return ResponseEntity.ok(modelMapper.map(correlacion, CorrelacionResponse.class));
+        return ResponseEntity.ok(correlacionOrquestadorService.definir(empresaId, mensajeId, request));
     }
 
     @GetMapping
@@ -73,8 +69,7 @@ public class CorrelacionController {
     public ResponseEntity<CorrelacionResponse> obtener(@PathVariable Long mensajeId,
             @AuthenticationPrincipal ApiPrincipal principal) {
         Long empresaId = principal.empresaId();
-        Correlacion correlacion = correlacionService.obtener(empresaId, mensajeId);
-        return ResponseEntity.ok(modelMapper.map(correlacion, CorrelacionResponse.class));
+        return ResponseEntity.ok(correlacionService.consultarPorMensaje(empresaId, mensajeId));
     }
 
     @DeleteMapping

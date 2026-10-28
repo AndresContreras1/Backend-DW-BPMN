@@ -16,12 +16,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import org.modelmapper.ModelMapper;
 
 import com.facimus.procesos.modelado.controller.dto.EditarPoolRequest;
 import com.facimus.procesos.modelado.controller.dto.PoolRequest;
 import com.facimus.procesos.modelado.controller.dto.PoolResponse;
-import com.facimus.procesos.modelado.model.Pool;
 import com.facimus.procesos.gestion.service.OperacionEstructura;
 import com.facimus.procesos.gestion.service.PermisoEstructuraService;
 import com.facimus.procesos.modelado.service.PoolOrquestadorService;
@@ -47,7 +45,6 @@ public class PoolController {
     private final PoolService poolService;
     private final PoolOrquestadorService poolOrquestadorService;
     private final PermisoEstructuraService permisoEstructuraService;
-    private final ModelMapper modelMapper;
 
     @GetMapping("/procesos/{procesoId}/pools")
     @Operation(summary = "Listar los pools de un proceso", description = "Ordenados por su posicion.")
@@ -59,8 +56,7 @@ public class PoolController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<List<PoolResponse>> listar(@PathVariable Long procesoId,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        return ResponseEntity.ok(poolService.listarPorProceso(principal.empresaId(), procesoId).stream()
-                .map(p -> modelMapper.map(p, PoolResponse.class)).toList());
+        return ResponseEntity.ok(poolService.consultarPorProceso(principal.empresaId(), procesoId));
     }
 
     @GetMapping("/pools/{id}")
@@ -73,7 +69,7 @@ public class PoolController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<PoolResponse> detalle(@PathVariable Long id,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        return ResponseEntity.ok(modelMapper.map(poolService.obtener(principal.empresaId(), id), PoolResponse.class));
+        return ResponseEntity.ok(poolService.consultarDetalle(principal.empresaId(), id));
     }
 
     @PostMapping("/procesos/{procesoId}/pools")
@@ -91,11 +87,10 @@ public class PoolController {
     public ResponseEntity<PoolResponse> crear(@PathVariable Long procesoId,
             @Validated @RequestBody PoolRequest request, @AuthenticationPrincipal ApiPrincipal principal) {
         permisoEstructuraService.validar(principal.empresaId(), principal.rol(), OperacionEstructura.CREAR_POOL);
-        Pool pool = poolService.crear(principal.empresaId(), procesoId, request.nombre(),
-                request.tipoParticipante(), request.cajaNegra());
+        PoolResponse pool = poolService.crear(principal.empresaId(), procesoId, request);
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentContextPath()
-                        .path("/api/v1/pools/{id}").buildAndExpand(pool.getId()).toUri())
-                .body(modelMapper.map(pool, PoolResponse.class));
+                        .path("/api/v1/pools/{id}").buildAndExpand(pool.id()).toUri())
+                .body(pool);
     }
 
     @PutMapping("/pools/{id}")
@@ -116,10 +111,7 @@ public class PoolController {
             @Validated @RequestBody EditarPoolRequest request, @AuthenticationPrincipal ApiPrincipal principal) {
         Long empresaId = principal.empresaId();
         permisoEstructuraService.validar(empresaId, principal.rol(), OperacionEstructura.EDITAR_POOL);
-        Pool pool = request.cajaNegra() == null
-                ? poolService.editar(empresaId, id, request.nombre(), request.tipoParticipante())
-                : poolService.editar(empresaId, id, request.nombre(), request.tipoParticipante(), request.cajaNegra());
-        return ResponseEntity.ok(modelMapper.map(pool, PoolResponse.class));
+        return ResponseEntity.ok(poolService.editar(empresaId, id, request));
     }
 
     @DeleteMapping("/pools/{id}")

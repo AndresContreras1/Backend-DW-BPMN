@@ -19,9 +19,12 @@ import com.facimus.procesos.modelado.service.PoolOrquestadorService;
 import com.facimus.procesos.modelado.service.PoolService;
 
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 
 import com.facimus.procesos.config.ModelMapperConfig;
+import org.modelmapper.ModelMapper;
+import com.facimus.procesos.modelado.controller.dto.PoolRequest;
+import com.facimus.procesos.modelado.controller.dto.EditarPoolRequest;
+import com.facimus.procesos.modelado.controller.dto.PoolResponse;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
@@ -32,8 +35,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 
 @WebMvcTest(PoolController.class)
-@Import(ModelMapperConfig.class)
 class PoolControllerTest {
+
+    private static final ModelMapper MAPPER = new ModelMapperConfig().modelMapper();
 
     @Autowired
     private MockMvc mockMvc;
@@ -50,8 +54,8 @@ class PoolControllerTest {
     @Test
     @DisplayName("GET /api/v1/procesos/{procesoId}/pools - listar pools (200)")
     void listar_pools() throws Exception {
-        Pool pool = crearPool(1L, "Cliente");
-        given(poolService.listarPorProceso(1L, 10L)).willReturn(List.of(pool));
+        var pool = crearPool(1L, "Cliente");
+        given(poolService.consultarPorProceso(1L, 10L)).willReturn(List.of(pool));
 
         mockMvc.perform(get("/api/v1/procesos/10/pools").with(principal(RolAcceso.EDITOR)))
                 .andExpect(status().isOk())
@@ -68,8 +72,8 @@ class PoolControllerTest {
     @Test
     @DisplayName("GET /api/v1/pools/{id} - detalle pool (200)")
     void detalle_pool() throws Exception {
-        Pool pool = crearPool(1L, "Cliente");
-        given(poolService.obtener(1L, 1L)).willReturn(pool);
+        var pool = crearPool(1L, "Cliente");
+        given(poolService.consultarDetalle(1L, 1L)).willReturn(pool);
 
         mockMvc.perform(get("/api/v1/pools/1").with(principal(RolAcceso.EDITOR)))
                 .andExpect(status().isOk())
@@ -86,8 +90,8 @@ class PoolControllerTest {
     @Test
     @DisplayName("POST /api/v1/procesos/{procesoId}/pools - crear pool (201)")
     void crear_pool() throws Exception {
-        Pool pool = crearPool(2L, "Proveedor");
-        given(poolService.crear(eq(1L), eq(10L), anyString(), any(), anyBoolean())).willReturn(pool);
+        var pool = crearPool(2L, "Proveedor");
+        given(poolService.crear(eq(1L), eq(10L), any(PoolRequest.class))).willReturn(pool);
 
         mockMvc.perform(post("/api/v1/procesos/10/pools")
                         .with(principal(RolAcceso.EDITOR))
@@ -115,8 +119,8 @@ class PoolControllerTest {
     @Test
     @DisplayName("PUT /api/v1/pools/{id} - editar pool (200)")
     void editar_pool() throws Exception {
-        Pool pool = crearPool(1L, "Cliente VIP");
-        given(poolService.editar(eq(1L), eq(1L), anyString(), any())).willReturn(pool);
+        var pool = crearPool(1L, "Cliente VIP");
+        given(poolService.editar(eq(1L), eq(1L), any(EditarPoolRequest.class))).willReturn(pool);
 
         mockMvc.perform(put("/api/v1/pools/1")
                         .with(principal(RolAcceso.EDITOR))
@@ -137,7 +141,7 @@ class PoolControllerTest {
                 .andExpect(status().isNoContent());
     }
 
-    private Pool crearPool(Long id, String nombre) {
+    private PoolResponse crearPool(Long id, String nombre) {
         Proceso proceso = new Proceso();
         proceso.setId(10L);
 
@@ -148,7 +152,7 @@ class PoolControllerTest {
         pool.setCajaNegra(false);
         pool.setOrden(0);
         pool.setProceso(proceso);
-        return pool;
+        return MAPPER.map(pool, PoolResponse.class);
     }
 
 }

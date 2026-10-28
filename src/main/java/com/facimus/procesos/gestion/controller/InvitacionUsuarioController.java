@@ -1,7 +1,6 @@
 package com.facimus.procesos.gestion.controller;
 
 
-import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
@@ -38,7 +37,6 @@ import lombok.RequiredArgsConstructor;
 public class InvitacionUsuarioController {
 
     private final InvitacionUsuarioService invitacionUsuarioService;
-    private final ModelMapper modelMapper;
 
     @PostMapping
     @Operation(summary = "Invitar un colaborador", description = "Genera una invitacion por correo con un token de un solo uso.")
@@ -55,10 +53,10 @@ public class InvitacionUsuarioController {
     public ResponseEntity<InvitacionUsuarioResponse> crear(
             @Validated @RequestBody InvitacionUsuarioRequest request,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        var invitacion = invitacionUsuarioService.crear(principal.empresaId(), request.email(), request.rolAcceso());
+        InvitacionUsuarioResponse invitacion = invitacionUsuarioService.crear(principal.empresaId(), request);
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentContextPath()
-                        .path("/api/v1/usuarios/invitaciones/{id}").buildAndExpand(invitacion.getId()).toUri())
-                .body(modelMapper.map(invitacion, InvitacionUsuarioResponse.class));
+                        .path("/api/v1/usuarios/invitaciones/{id}").buildAndExpand(invitacion.id()).toUri())
+                .body(invitacion);
     }
 
     @PostMapping("/{token}/aceptar")
@@ -73,8 +71,6 @@ public class InvitacionUsuarioController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<UsuarioResponse> aceptar(@PathVariable String token,
             @Validated @RequestBody AceptarInvitacionRequest request) {
-        return ResponseEntity.ok(modelMapper.map(
-                invitacionUsuarioService.aceptar(token, request.nombre(), request.password()),
-                UsuarioResponse.class));
+        return ResponseEntity.ok(invitacionUsuarioService.aceptar(token, request));
     }
 }

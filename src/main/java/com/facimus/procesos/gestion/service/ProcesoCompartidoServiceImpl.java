@@ -1,5 +1,10 @@
 package com.facimus.procesos.gestion.service;
 
+import com.facimus.procesos.gestion.controller.dto.CompartirProcesoRequest;
+import com.facimus.procesos.gestion.controller.dto.ProcesoCompartidoDetalleResponse;
+import com.facimus.procesos.gestion.controller.dto.ProcesoCompartidoResponse;
+import org.modelmapper.ModelMapper;
+
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -28,6 +33,7 @@ public class ProcesoCompartidoServiceImpl implements ProcesoCompartidoService {
     private final UsuarioService usuarioService;
     private final ProcesoDiagramaService procesoDiagramaService;
     private final HistorialCambioService historialCambioService;
+    private final ModelMapper modelMapper;
 
     @Transactional
     @Override
@@ -97,5 +103,36 @@ public class ProcesoCompartidoServiceImpl implements ProcesoCompartidoService {
         return new ProcesoCompartidoDetalle(compartido.getProceso(), compartido,
                 diagrama.pools(), diagrama.lanes(), diagrama.actividades(), diagrama.gateways(),
                 diagrama.eventos(), diagrama.arcos(), diagrama.mensajes());
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<ProcesoCompartidoResponse> consultarCompartidosPorPropietario(Long empresaId, Long procesoId) {
+        return listarCompartidosPorPropietario(empresaId, procesoId).stream()
+                .map(c -> modelMapper.map(c, ProcesoCompartidoResponse.class))
+                .toList();
+    }
+
+    @Transactional
+    @Override
+    public ProcesoCompartidoResponse compartir(Long empresaId, Long usuarioId, Long procesoId,
+            CompartirProcesoRequest request) {
+        ProcesoCompartido compartido = compartir(empresaId, usuarioId, procesoId, request.empresaInvitadaId());
+        return modelMapper.map(compartido, ProcesoCompartidoResponse.class);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<ProcesoCompartidoResponse> consultarRecibidos(Long empresaInvitadaId) {
+        return listarRecibidos(empresaInvitadaId).stream()
+                .map(c -> modelMapper.map(c, ProcesoCompartidoResponse.class))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public ProcesoCompartidoDetalleResponse consultarCompartido(Long empresaInvitadaId, Long procesoId) {
+        return modelMapper.map(obtenerCompartido(empresaInvitadaId, procesoId),
+                ProcesoCompartidoDetalleResponse.class);
     }
 }

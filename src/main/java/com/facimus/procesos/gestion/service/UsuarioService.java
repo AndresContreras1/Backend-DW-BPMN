@@ -1,5 +1,11 @@
 package com.facimus.procesos.gestion.service;
 
+import com.facimus.procesos.gestion.controller.dto.ActualizarUsuarioRequest;
+import com.facimus.procesos.gestion.controller.dto.CrearUsuarioRequest;
+import com.facimus.procesos.gestion.controller.dto.LoginRequest;
+import com.facimus.procesos.gestion.controller.dto.LoginResponse;
+import com.facimus.procesos.gestion.controller.dto.UsuarioResponse;
+
 import java.util.List;
 import com.facimus.procesos.gestion.model.RolAcceso;
 import com.facimus.procesos.gestion.model.Usuario;
@@ -23,4 +29,10 @@ public interface UsuarioService {
     boolean existePorEmail(String email);
 
     java.util.Optional<Usuario> buscar(Long empresaId, Long usuarioId);
+
+    LoginResponse autenticar(LoginRequest request);
+    List<UsuarioResponse> consultarPorEmpresa(Long empresaId);
+    UsuarioResponse crearColaborador(Long empresaId, CrearUsuarioRequest request);
+    UsuarioResponse consultarDetalle(Long empresaId, Long usuarioId);
+    UsuarioResponse actualizar(Long empresaId, Long usuarioId, ActualizarUsuarioRequest request);
 }

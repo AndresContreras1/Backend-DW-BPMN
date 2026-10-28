@@ -1,5 +1,9 @@
 package com.facimus.procesos.modelado.service;
 
+import com.facimus.procesos.modelado.controller.dto.PoolRequest;
+import com.facimus.procesos.modelado.controller.dto.EditarPoolRequest;
+import com.facimus.procesos.modelado.controller.dto.PoolResponse;
+import org.modelmapper.ModelMapper;
 import java.util.List;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -34,6 +38,7 @@ public class PoolServiceImpl implements PoolService {
     private final NodoFlujoService nodoFlujoService;
     private final AuditoriaModeladoService auditoriaModeladoService;
     private final ApplicationEventPublisher eventPublisher;
+    private final ModelMapper modelMapper;
 
     @Transactional
     @Override
@@ -129,6 +134,36 @@ public class PoolServiceImpl implements PoolService {
     @Override
     public boolean existe(Long empresaId, Long poolId) {
         return poolRepository.existsByIdAndEmpresaId(poolId, empresaId);
+    }
+
+    @Transactional
+    @Override
+    public PoolResponse crear(Long empresaId, Long procesoId, PoolRequest request) {
+        Pool pool = crear(empresaId, procesoId, request.nombre(), request.tipoParticipante(),
+                request.cajaNegra());
+        return modelMapper.map(pool, PoolResponse.class);
+    }
+
+    @Transactional
+    @Override
+    public PoolResponse editar(Long empresaId, Long poolId, EditarPoolRequest request) {
+        Pool pool = request.cajaNegra() == null
+                ? editar(empresaId, poolId, request.nombre(), request.tipoParticipante())
+                : editar(empresaId, poolId, request.nombre(), request.tipoParticipante(), request.cajaNegra());
+        return modelMapper.map(pool, PoolResponse.class);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<PoolResponse> consultarPorProceso(Long empresaId, Long procesoId) {
+        return listarPorProceso(empresaId, procesoId).stream()
+                .map(p -> modelMapper.map(p, PoolResponse.class)).toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public PoolResponse consultarDetalle(Long empresaId, Long poolId) {
+        return modelMapper.map(obtener(empresaId, poolId), PoolResponse.class);
     }
 
     private void validarProcesoActivo(Proceso proceso) {

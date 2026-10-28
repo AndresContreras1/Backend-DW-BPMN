@@ -1,5 +1,10 @@
 package com.facimus.procesos.gestion.service;
 
+import com.facimus.procesos.common.api.PageResponse;
+import com.facimus.procesos.gestion.controller.dto.RolProcesoConsultaResponse;
+import com.facimus.procesos.gestion.controller.dto.RolProcesoRequest;
+import com.facimus.procesos.gestion.controller.dto.RolProcesoVistaResponse;
+
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,4 +27,10 @@ public interface RolProcesoService {
     long contarUsos(Long empresaId, Long rolId);
 
     RolProceso obtener(Long empresaId, Long rolId);
+
+    RolProcesoVistaResponse crear(Long empresaId, RolProcesoRequest request);
+    RolProcesoVistaResponse editar(Long empresaId, Long rolId, RolProcesoRequest request);
+    RolProcesoVistaResponse consultarDetalle(Long empresaId, Long rolId);
+    List<RolProcesoVistaResponse> consultarConUso(Long empresaId);
+    PageResponse<RolProcesoConsultaResponse> consultarPagina(Long empresaId, String nombre, int pagina);
 }

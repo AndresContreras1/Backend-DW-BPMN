@@ -18,9 +18,13 @@ import com.facimus.procesos.modelado.model.Pool;
 import com.facimus.procesos.modelado.service.ArcoService;
 
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 
 import com.facimus.procesos.config.ModelMapperConfig;
+import org.modelmapper.ModelMapper;
+import com.facimus.procesos.modelado.controller.dto.ArcoRequest;
+import com.facimus.procesos.modelado.controller.dto.EditarArcoRequest;
+import com.facimus.procesos.modelado.controller.dto.ArcoResponse;
+import com.facimus.procesos.modelado.controller.dto.ImpactoEliminacionResponse;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
@@ -31,8 +35,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 
 @WebMvcTest(ArcoController.class)
-@Import(ModelMapperConfig.class)
 class ArcoControllerTest {
+
+    private static final ModelMapper MAPPER = new ModelMapperConfig().modelMapper();
 
     @Autowired
     private MockMvc mockMvc;
@@ -43,8 +48,8 @@ class ArcoControllerTest {
     @Test
     @DisplayName("POST /api/v1/arcos - crear arco (201)")
     void crear_arco() throws Exception {
-        Arco arco = crearArco(1L);
-        given(arcoService.crear(eq(1L), anyLong(), anyLong(), anyString(), anyString())).willReturn(arco);
+        var arco = crearArco(1L);
+        given(arcoService.crear(eq(1L), any(ArcoRequest.class))).willReturn(arco);
 
         mockMvc.perform(post("/api/v1/arcos")
                         .with(principal(RolAcceso.EDITOR))
@@ -84,8 +89,8 @@ class ArcoControllerTest {
     @Test
     @DisplayName("GET /api/v1/arcos/{id} - detalle arco (200)")
     void detalle_arco() throws Exception {
-        Arco arco = crearArco(1L);
-        given(arcoService.obtener(1L, 1L)).willReturn(arco);
+        var arco = crearArco(1L);
+        given(arcoService.consultarDetalle(1L, 1L)).willReturn(arco);
 
         mockMvc.perform(get("/api/v1/arcos/1").with(principal(RolAcceso.EDITOR)))
                 .andExpect(status().isOk())
@@ -102,8 +107,8 @@ class ArcoControllerTest {
     @Test
     @DisplayName("GET /api/v1/pools/{poolId}/arcos - listar arcos (200)")
     void listar_arcos() throws Exception {
-        Arco arco = crearArco(1L);
-        given(arcoService.listarPorPool(1L, 5L)).willReturn(List.of(arco));
+        var arco = crearArco(1L);
+        given(arcoService.consultarPorPool(1L, 5L)).willReturn(List.of(arco));
 
         mockMvc.perform(get("/api/v1/pools/5/arcos").with(principal(RolAcceso.EDITOR)))
                 .andExpect(status().isOk())
@@ -120,9 +125,8 @@ class ArcoControllerTest {
     @Test
     @DisplayName("PUT /api/v1/arcos/{id} - editar arco (200)")
     void editar_arco() throws Exception {
-        Arco arco = crearArco(1L);
-        arco.setEtiqueta("no");
-        given(arcoService.editar(eq(1L), eq(1L), anyString(), anyString(), any(), any())).willReturn(arco);
+        var arco = new ArcoResponse(1L, "no", "aprobado", 10L, 20L, 5L);
+        given(arcoService.editar(eq(1L), eq(1L), any(EditarArcoRequest.class))).willReturn(arco);
 
         mockMvc.perform(put("/api/v1/arcos/1")
                         .with(principal(RolAcceso.EDITOR))
@@ -136,9 +140,8 @@ class ArcoControllerTest {
 
     @Test
     void impacto_eliminacion_retorna_advertencias() throws Exception {
-        given(arcoService.evaluarImpactoEliminacion(1L, 1L))
-                .willReturn(new com.facimus.procesos.modelado.service.dto.ImpactoEliminacion(
-                        true, List.of("Nodo desconectado")));
+        given(arcoService.consultarImpactoEliminacion(1L, 1L))
+                .willReturn(new ImpactoEliminacionResponse(true, true, List.of("Nodo desconectado")));
 
         mockMvc.perform(get("/api/v1/arcos/1/impacto-eliminacion")
                 .with(principal(RolAcceso.EDITOR)))
@@ -157,7 +160,7 @@ class ArcoControllerTest {
                 .andExpect(status().isNoContent());
     }
 
-    private Arco crearArco(Long id) {
+    private ArcoResponse crearArco(Long id) {
         Pool pool = new Pool();
         pool.setId(5L);
 
@@ -179,7 +182,7 @@ class ArcoControllerTest {
         arco.setOrigen(origen);
         arco.setDestino(destino);
         arco.setPool(pool);
-        return arco;
+        return MAPPER.map(arco, ArcoResponse.class);
     }
 
 }

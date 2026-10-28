@@ -1,5 +1,8 @@
 package com.facimus.procesos.modelado.service;
 
+import com.facimus.procesos.modelado.controller.dto.CorrelacionRequest;
+import com.facimus.procesos.modelado.controller.dto.CorrelacionResponse;
+import org.modelmapper.ModelMapper;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -22,6 +25,7 @@ public class CorrelacionOrquestadorServiceImpl implements CorrelacionOrquestador
 
     private final MensajeService mensajeService;
     private final CorrelacionService correlacionService;
+    private final ModelMapper modelMapper;
 
     @Transactional
     @Override
@@ -42,5 +46,12 @@ public class CorrelacionOrquestadorServiceImpl implements CorrelacionOrquestador
         correlacionService.eliminar(empresaId, mensaje);
         mensaje.setClaveCorrelacion(null);
         mensajeService.guardar(mensaje);
+    }
+
+    @Transactional
+    @Override
+    public CorrelacionResponse definir(Long empresaId, Long mensajeId, CorrelacionRequest request) {
+        Correlacion correlacion = definir(empresaId, mensajeId, request.criterio());
+        return modelMapper.map(correlacion, CorrelacionResponse.class);
     }
 }

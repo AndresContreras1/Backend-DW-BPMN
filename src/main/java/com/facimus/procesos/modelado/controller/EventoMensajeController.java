@@ -16,11 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import org.modelmapper.ModelMapper;
 
 import com.facimus.procesos.modelado.controller.dto.EventoMensajeRequest;
 import com.facimus.procesos.modelado.controller.dto.EventoMensajeResponse;
-import com.facimus.procesos.modelado.model.EventoMensaje;
 import com.facimus.procesos.modelado.service.EventoMensajeService;
 import com.facimus.procesos.security.ApiPrincipal;
 
@@ -41,7 +39,6 @@ import lombok.RequiredArgsConstructor;
 public class EventoMensajeController {
 
     private final EventoMensajeService eventoMensajeService;
-    private final ModelMapper modelMapper;
 
     @PostMapping("/lanes/{laneId}/eventos-mensaje")
     @Operation(summary = "Crear un evento de mensaje en una lane", description = "Puede ser Throw (envio) o Catch (recepcion, de inicio o intermedio).")
@@ -58,12 +55,10 @@ public class EventoMensajeController {
     public ResponseEntity<EventoMensajeResponse> crear(@PathVariable Long laneId,
             @Validated @RequestBody EventoMensajeRequest request,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        EventoMensaje evento = eventoMensajeService.crear(principal.empresaId(), laneId, request.nombre(),
-                request.tipoEvento(), request.contenido(), request.claveCorrelacion(),
-                request.posicionX(), request.posicionY(), request.origenExterno());
+        EventoMensajeResponse evento = eventoMensajeService.crear(principal.empresaId(), laneId, request);
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentContextPath()
-                        .path("/api/v1/eventos-mensaje/{id}").buildAndExpand(evento.getId()).toUri())
-                .body(modelMapper.map(evento, EventoMensajeResponse.class));
+                        .path("/api/v1/eventos-mensaje/{id}").buildAndExpand(evento.id()).toUri())
+                .body(evento);
     }
 
     @GetMapping("/eventos-mensaje/{id}")
@@ -76,7 +71,7 @@ public class EventoMensajeController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<EventoMensajeResponse> detalle(@PathVariable Long id,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        return ResponseEntity.ok(modelMapper.map(eventoMensajeService.obtener(principal.empresaId(), id), EventoMensajeResponse.class));
+        return ResponseEntity.ok(eventoMensajeService.consultarDetalle(principal.empresaId(), id));
     }
 
     @GetMapping("/lanes/{laneId}/eventos-mensaje")
@@ -89,8 +84,7 @@ public class EventoMensajeController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<List<EventoMensajeResponse>> listar(@PathVariable Long laneId,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        return ResponseEntity.ok(eventoMensajeService.listarPorLane(principal.empresaId(), laneId).stream()
-                .map(e -> modelMapper.map(e, EventoMensajeResponse.class)).toList());
+        return ResponseEntity.ok(eventoMensajeService.consultarPorLane(principal.empresaId(), laneId));
     }
 
     @PutMapping("/eventos-mensaje/{id}")
@@ -108,10 +102,7 @@ public class EventoMensajeController {
     public ResponseEntity<EventoMensajeResponse> editar(@PathVariable Long id,
             @Validated @RequestBody EventoMensajeRequest request,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        EventoMensaje evento = eventoMensajeService.editar(principal.empresaId(), id, request.nombre(),
-                request.tipoEvento(), request.contenido(), request.claveCorrelacion(),
-                request.posicionX(), request.posicionY(), request.origenExterno());
-        return ResponseEntity.ok(modelMapper.map(evento, EventoMensajeResponse.class));
+        return ResponseEntity.ok(eventoMensajeService.editar(principal.empresaId(), id, request));
     }
 
     @DeleteMapping("/eventos-mensaje/{id}")

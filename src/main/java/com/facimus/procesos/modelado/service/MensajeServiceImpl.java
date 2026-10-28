@@ -1,5 +1,9 @@
 package com.facimus.procesos.modelado.service;
 
+import com.facimus.procesos.modelado.controller.dto.MensajeRequest;
+import com.facimus.procesos.modelado.controller.dto.EditarMensajeRequest;
+import com.facimus.procesos.modelado.controller.dto.MensajeResponse;
+import org.modelmapper.ModelMapper;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,6 +40,7 @@ public class MensajeServiceImpl implements MensajeService {
     private final CorrelacionService correlacionService;
     private final NodoFlujoService nodoFlujoService;
     private final AuditoriaModeladoService auditoriaModeladoService;
+    private final ModelMapper modelMapper;
 
     /** Compatibilidad con clientes que todavia modelan el mensaje en varias llamadas. */
     @Transactional
@@ -367,6 +372,49 @@ public class MensajeServiceImpl implements MensajeService {
                     "La actividad de error solo aplica a la politica DERIVAR_ACTIVIDAD_ERROR.");
         }
         return null;
+    }
+
+    @Transactional
+    @Override
+    public MensajeResponse crear(Long empresaId, Long procesoId, MensajeRequest request) {
+        Mensaje mensaje = request.eventoThrowId() == null
+                ? crear(empresaId, procesoId, request.nombre(), request.contenido(),
+                        request.poolOrigenId(), request.poolDestinoId())
+                : crear(empresaId, procesoId, request.nombre(), request.contenido(),
+                        request.poolOrigenId(), request.poolDestinoId(), request.eventoThrowId(),
+                        request.eventoCatchId(), request.claveCorrelacion(), request.tipoDestinoExterno(),
+                        request.destinoExterno(), request.politicaFalloNotificacion(),
+                        request.actividadErrorId(), request.politicaSinCaso());
+        return modelMapper.map(mensaje, MensajeResponse.class);
+    }
+
+    @Transactional
+    @Override
+    public MensajeResponse editar(Long empresaId, Long mensajeId, EditarMensajeRequest request) {
+        boolean edicionLegacy = request.eventoCatchId() == null && request.claveCorrelacion() == null
+                && request.tipoDestinoExterno() == null && request.destinoExterno() == null
+                && request.politicaFalloNotificacion() == null && request.actividadErrorId() == null
+                && request.politicaSinCaso() == null;
+        Mensaje mensaje = edicionLegacy
+                ? editar(empresaId, mensajeId, request.nombre(), request.contenido())
+                : editar(empresaId, mensajeId, request.nombre(), request.contenido(),
+                        request.eventoCatchId(), request.claveCorrelacion(), request.tipoDestinoExterno(),
+                        request.destinoExterno(), request.politicaFalloNotificacion(),
+                        request.actividadErrorId(), request.politicaSinCaso());
+        return modelMapper.map(mensaje, MensajeResponse.class);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<MensajeResponse> consultarPorProceso(Long empresaId, Long procesoId) {
+        return listarPorProceso(empresaId, procesoId).stream()
+                .map(m -> modelMapper.map(m, MensajeResponse.class)).toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public MensajeResponse consultarDetalle(Long empresaId, Long mensajeId) {
+        return modelMapper.map(obtener(empresaId, mensajeId), MensajeResponse.class);
     }
 
     private void validarProcesoActivo(Proceso proceso) {

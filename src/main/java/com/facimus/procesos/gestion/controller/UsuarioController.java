@@ -16,12 +16,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import org.modelmapper.ModelMapper;
 
 import com.facimus.procesos.gestion.controller.dto.ActualizarUsuarioRequest;
 import com.facimus.procesos.gestion.controller.dto.CrearUsuarioRequest;
 import com.facimus.procesos.gestion.controller.dto.UsuarioResponse;
-import com.facimus.procesos.gestion.model.Usuario;
 import com.facimus.procesos.gestion.service.UsuarioService;
 import com.facimus.procesos.security.ApiPrincipal;
 
@@ -43,7 +41,6 @@ import lombok.RequiredArgsConstructor;
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
-    private final ModelMapper modelMapper;
 
     @GetMapping
     @Operation(summary = "Listar los colaboradores de la empresa", description = "Solo administrador.")
@@ -54,11 +51,7 @@ public class UsuarioController {
     @ApiResponse(responseCode = "403", description = "Sin permisos para esta operacion.",
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<List<UsuarioResponse>> listar(@AuthenticationPrincipal ApiPrincipal principal) {
-        Long empresaId = principal.empresaId();
-        List<UsuarioResponse> usuarios = usuarioService.listarPorEmpresa(empresaId).stream()
-                .map(u -> modelMapper.map(u, UsuarioResponse.class))
-                .toList();
-        return ResponseEntity.ok(usuarios);
+        return ResponseEntity.ok(usuarioService.consultarPorEmpresa(principal.empresaId()));
     }
 
     @PostMapping
@@ -75,12 +68,10 @@ public class UsuarioController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<UsuarioResponse> crear(@Validated @RequestBody CrearUsuarioRequest request,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        Long empresaId = principal.empresaId();
-        Usuario usuario = usuarioService.crearColaborador(empresaId, request.nombre(), request.email(),
-                request.password(), request.rolAcceso());
+        UsuarioResponse usuario = usuarioService.crearColaborador(principal.empresaId(), request);
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentContextPath()
-                        .path("/api/v1/usuarios/{id}").buildAndExpand(usuario.getId()).toUri())
-        .body(modelMapper.map(usuario, UsuarioResponse.class));
+                        .path("/api/v1/usuarios/{id}").buildAndExpand(usuario.id()).toUri())
+                .body(usuario);
     }
 
     @GetMapping("/{id}")
@@ -95,9 +86,7 @@ public class UsuarioController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<UsuarioResponse> obtener(@PathVariable Long id,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        Long empresaId = principal.empresaId();
-        Usuario usuario = usuarioService.obtener(empresaId, id);
-        return ResponseEntity.ok(modelMapper.map(usuario, UsuarioResponse.class));
+        return ResponseEntity.ok(usuarioService.consultarDetalle(principal.empresaId(), id));
     }
 
     @PatchMapping("/{id}")
@@ -114,9 +103,7 @@ public class UsuarioController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<UsuarioResponse> actualizar(@PathVariable Long id,
             @Validated @RequestBody ActualizarUsuarioRequest request, @AuthenticationPrincipal ApiPrincipal principal) {
-        Long empresaId = principal.empresaId();
-        Usuario usuario = usuarioService.actualizar(empresaId, id, request.rolAcceso(), request.activo());
-        return ResponseEntity.ok(modelMapper.map(usuario, UsuarioResponse.class));
+        return ResponseEntity.ok(usuarioService.actualizar(principal.empresaId(), id, request));
     }
 
     @DeleteMapping("/{id}")
@@ -129,8 +116,7 @@ public class UsuarioController {
     @ApiResponse(responseCode = "404", description = "El recurso solicitado no existe.",
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<Void> desactivar(@PathVariable Long id, @AuthenticationPrincipal ApiPrincipal principal) {
-        Long empresaId = principal.empresaId();
-        usuarioService.desactivar(empresaId, id);
+        usuarioService.desactivar(principal.empresaId(), id);
         return ResponseEntity.noContent().build();
     }
 }

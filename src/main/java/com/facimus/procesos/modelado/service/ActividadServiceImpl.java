@@ -1,5 +1,9 @@
 package com.facimus.procesos.modelado.service;
 
+import com.facimus.procesos.modelado.controller.dto.ActividadRequest;
+import com.facimus.procesos.modelado.controller.dto.ActividadResponse;
+import com.facimus.procesos.modelado.controller.dto.ImpactoEliminacionResponse;
+import org.modelmapper.ModelMapper;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -24,6 +28,7 @@ public class ActividadServiceImpl implements ActividadService {
     private final LaneService laneService;
     private final ArcoService arcoService;
     private final AuditoriaModeladoService auditoriaModeladoService;
+    private final ModelMapper modelMapper;
 
     @Transactional
     @Override
@@ -175,6 +180,48 @@ public class ActividadServiceImpl implements ActividadService {
                 .filter(Actividad.class::isInstance)
                 .map(Actividad.class::cast)
                 .toList();
+    }
+
+    @Transactional
+    @Override
+    public ActividadResponse crear(Long empresaId, Long laneId, ActividadRequest request) {
+        Actividad actividad = request.tipoActividad() == null
+                ? crear(empresaId, laneId, request.nombre(), request.descripcion(),
+                        request.posicionX(), request.posicionY())
+                : crear(empresaId, laneId, request.nombre(), request.descripcion(),
+                        request.posicionX(), request.posicionY(), request.tipoActividad());
+        return modelMapper.map(actividad, ActividadResponse.class);
+    }
+
+    @Transactional
+    @Override
+    public ActividadResponse editar(Long empresaId, Long actividadId, ActividadRequest request) {
+        Actividad actividad = request.tipoActividad() == null
+                ? editar(empresaId, actividadId, request.nombre(), request.descripcion(),
+                        request.posicionX(), request.posicionY(), request.laneId())
+                : editar(empresaId, actividadId, request.nombre(), request.descripcion(),
+                        request.posicionX(), request.posicionY(), request.laneId(), request.tipoActividad());
+        return modelMapper.map(actividad, ActividadResponse.class);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public ActividadResponse consultarDetalle(Long empresaId, Long actividadId) {
+        return modelMapper.map(obtener(empresaId, actividadId), ActividadResponse.class);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<ActividadResponse> consultarPorLane(Long empresaId, Long laneId) {
+        return listarPorLane(empresaId, laneId).stream()
+                .map(a -> modelMapper.map(a, ActividadResponse.class)).toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public ImpactoEliminacionResponse consultarImpactoEliminacion(Long empresaId, Long actividadId) {
+        return modelMapper.map(evaluarImpactoEliminacion(empresaId, actividadId),
+                ImpactoEliminacionResponse.class);
     }
 
     private void validarProcesoActivo(Proceso proceso) {

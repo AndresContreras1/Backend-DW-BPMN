@@ -13,18 +13,19 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.facimus.procesos.config.ModelMapperConfig;
-import com.facimus.procesos.gestion.model.*;
+import com.facimus.procesos.gestion.controller.dto.CompartirProcesoRequest;
+import com.facimus.procesos.gestion.controller.dto.ProcesoCompartidoDetalleResponse;
+import com.facimus.procesos.gestion.controller.dto.ProcesoCompartidoResponse;
+import com.facimus.procesos.gestion.controller.dto.ProcesoResponse;
+import com.facimus.procesos.gestion.model.EstadoProceso;
+import com.facimus.procesos.gestion.model.RolAcceso;
 import com.facimus.procesos.gestion.service.ProcesoCompartidoService;
-import com.facimus.procesos.gestion.service.dto.ProcesoCompartidoDetalle;
 
 @WebMvcTest(ProcesoCompartidoController.class)
-@Import(ModelMapperConfig.class)
 class ProcesoCompartidoControllerTest {
 
     @Autowired MockMvc mockMvc;
@@ -32,8 +33,8 @@ class ProcesoCompartidoControllerTest {
 
     @Test
     void listar_compartidos_retorna_200() throws Exception {
-        ProcesoCompartido compartido = compartido();
-        given(service.listarCompartidosPorPropietario(1L, 10L)).willReturn(List.of(compartido));
+        ProcesoCompartidoResponse compartido = compartido();
+        given(service.consultarCompartidosPorPropietario(1L, 10L)).willReturn(List.of(compartido));
 
         mockMvc.perform(get("/api/v1/procesos/10/compartidos")
                 .with(principal(RolAcceso.ADMINISTRADOR)))
@@ -44,8 +45,8 @@ class ProcesoCompartidoControllerTest {
 
     @Test
     void compartir_retorna_201() throws Exception {
-        ProcesoCompartido compartido = compartido();
-        given(service.compartir(1L, 1L, 10L, 2L)).willReturn(compartido);
+        ProcesoCompartidoResponse compartido = compartido();
+        given(service.compartir(1L, 1L, 10L, new CompartirProcesoRequest(2L))).willReturn(compartido);
 
         mockMvc.perform(post("/api/v1/procesos/10/compartidos")
                 .with(principal(RolAcceso.ADMINISTRADOR))
@@ -69,7 +70,7 @@ class ProcesoCompartidoControllerTest {
 
     @Test
     void listar_recibidos_retorna_200() throws Exception {
-        given(service.listarRecibidos(1L)).willReturn(List.of(compartido()));
+        given(service.consultarRecibidos(1L)).willReturn(List.of(compartido()));
 
         mockMvc.perform(get("/api/v1/procesos-compartidos")
                 .with(principal(RolAcceso.EDITOR)))
@@ -79,11 +80,11 @@ class ProcesoCompartidoControllerTest {
 
     @Test
     void detalle_compartido_retorna_200() throws Exception {
-        ProcesoCompartido compartido = compartido();
-        ProcesoCompartidoDetalle detalle = new ProcesoCompartidoDetalle(
-                compartido.getProceso(), compartido,
+        ProcesoResponse proceso = new ProcesoResponse(10L, "Compras", "Proceso", "Operativo",
+                EstadoProceso.BORRADOR, true, LocalDateTime.now(), LocalDateTime.now());
+        ProcesoCompartidoDetalleResponse detalle = new ProcesoCompartidoDetalleResponse(proceso, "Acme", true,
                 List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
-        given(service.obtenerCompartido(1L, 10L)).willReturn(detalle);
+        given(service.consultarCompartido(1L, 10L)).willReturn(detalle);
 
         mockMvc.perform(get("/api/v1/procesos-compartidos/10")
                 .with(principal(RolAcceso.SOLO_LECTURA)))
@@ -104,33 +105,7 @@ class ProcesoCompartidoControllerTest {
                 .andExpect(status().isForbidden());
     }
 
-    private ProcesoCompartido compartido() {
-        Empresa propietaria = new Empresa();
-        propietaria.setId(1L);
-        propietaria.setNombre("Acme");
-
-        Empresa invitada = new Empresa();
-        invitada.setId(2L);
-        invitada.setNombre("Aliada");
-
-        Proceso proceso = new Proceso();
-        proceso.setId(10L);
-        proceso.setNombre("Compras");
-        proceso.setDescripcion("Proceso");
-        proceso.setCategoria("Operativo");
-        proceso.setEstado(EstadoProceso.BORRADOR);
-        proceso.setActivo(true);
-        proceso.setFechaCreacion(LocalDateTime.now());
-        proceso.setFechaModificacion(LocalDateTime.now());
-        proceso.setEmpresa(propietaria);
-
-        ProcesoCompartido compartido = new ProcesoCompartido();
-        compartido.setId(7L);
-        compartido.setEmpresa(propietaria);
-        compartido.setProceso(proceso);
-        compartido.setEmpresaInvitada(invitada);
-        compartido.setSoloLectura(true);
-        compartido.setActivo(true);
-        return compartido;
+    private ProcesoCompartidoResponse compartido() {
+        return new ProcesoCompartidoResponse(7L, 10L, "Compras", 1L, "Acme", 2L, "Aliada", true);
     }
 }

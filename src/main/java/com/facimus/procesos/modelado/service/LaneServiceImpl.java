@@ -1,5 +1,8 @@
 package com.facimus.procesos.modelado.service;
 
+import com.facimus.procesos.modelado.controller.dto.LaneResponse;
+import com.facimus.procesos.modelado.controller.dto.ReordenarLanesRequest;
+import org.modelmapper.ModelMapper;
 import java.util.List;
 
 import org.springframework.context.event.EventListener;
@@ -18,7 +21,7 @@ import com.facimus.procesos.modelado.repository.LaneRepository;
 import lombok.RequiredArgsConstructor;
 
 /**
- * La resolucion del RolProceso a asignar la hace LaneController (via RolProcesoService)
+ * La resolucion del RolProceso a asignar la hace LaneOrquestadorService (via RolProcesoService)
  * antes de llamar a crear()/editar(), para no crear una dependencia circular
  * LaneService<->RolProcesoService. RolProcesoService si depende de LaneService
  * (direccion unica: para saber en que lanes/procesos esta en uso un rol).
@@ -31,6 +34,7 @@ public class LaneServiceImpl implements LaneService {
     private final PoolService poolService;
     private final NodoFlujoService nodoFlujoService;
     private final AuditoriaModeladoService auditoriaModeladoService;
+    private final ModelMapper modelMapper;
 
     @Transactional
     @Override
@@ -168,6 +172,26 @@ public class LaneServiceImpl implements LaneService {
     @Override
     public boolean existe(Long empresaId, Long laneId) {
         return laneRepository.existsByIdAndEmpresaId(laneId, empresaId);
+    }
+
+    @Transactional
+    @Override
+    public List<LaneResponse> reordenar(Long empresaId, Long poolId, ReordenarLanesRequest request) {
+        return reordenar(empresaId, poolId, request.laneIds()).stream()
+                .map(l -> modelMapper.map(l, LaneResponse.class)).toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<LaneResponse> consultarPorPool(Long empresaId, Long poolId) {
+        return listarPorPool(empresaId, poolId).stream()
+                .map(l -> modelMapper.map(l, LaneResponse.class)).toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public LaneResponse consultarDetalle(Long empresaId, Long laneId) {
+        return modelMapper.map(obtener(empresaId, laneId), LaneResponse.class);
     }
 
     private void validarProcesoActivo(Proceso proceso) {

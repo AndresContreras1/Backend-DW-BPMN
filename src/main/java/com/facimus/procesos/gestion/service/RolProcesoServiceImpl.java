@@ -1,5 +1,12 @@
 package com.facimus.procesos.gestion.service;
 
+import com.facimus.procesos.common.api.PageResponse;
+import com.facimus.procesos.gestion.controller.dto.RolProcesoConsultaResponse;
+import com.facimus.procesos.gestion.controller.dto.RolProcesoRequest;
+import com.facimus.procesos.gestion.controller.dto.RolProcesoVistaResponse;
+import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.PageRequest;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,11 +35,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class RolProcesoServiceImpl implements RolProcesoService {
 
+    private static final int TAMANO_PAGINA = 10;
+
     private final RolProcesoRepository rolProcesoRepository;
     private final EmpresaService empresaService;
     private final LaneService laneService;
     private final UsuarioService usuarioService;
     private final HistorialCambioService historialCambioService;
+    private final ModelMapper modelMapper;
 
     @Transactional
     @Override
@@ -140,5 +150,45 @@ public class RolProcesoServiceImpl implements RolProcesoService {
         if (existe) {
             throw new ReglaNegocioException("Ya existe un rol de proceso con el nombre \"" + nombre + "\" en esta empresa.");
         }
+    }
+
+    @Transactional
+    @Override
+    public RolProcesoVistaResponse crear(Long empresaId, RolProcesoRequest request) {
+        RolProceso rol = crear(empresaId, request.nombre(), request.descripcion());
+        return new RolProcesoVistaResponse(rol.getId(), rol.getNombre(), rol.getDescripcion(), 0, false);
+    }
+
+    @Transactional
+    @Override
+    public RolProcesoVistaResponse editar(Long empresaId, Long rolId, RolProcesoRequest request) {
+        RolProceso rol = editar(empresaId, rolId, request.nombre(), request.descripcion());
+        long usos = contarUsos(empresaId, rolId);
+        return new RolProcesoVistaResponse(rol.getId(), rol.getNombre(), rol.getDescripcion(), usos, usos > 0);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public RolProcesoVistaResponse consultarDetalle(Long empresaId, Long rolId) {
+        RolProceso rol = obtener(empresaId, rolId);
+        long usos = contarUsos(empresaId, rolId);
+        return new RolProcesoVistaResponse(rol.getId(), rol.getNombre(), rol.getDescripcion(), usos, usos > 0);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<RolProcesoVistaResponse> consultarConUso(Long empresaId) {
+        return listarConUso(empresaId).stream()
+                .map(v -> modelMapper.map(v, RolProcesoVistaResponse.class))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public PageResponse<RolProcesoConsultaResponse> consultarPagina(Long empresaId, String nombre, int pagina) {
+        Page<RolProcesoConsultaResponse> page = buscarConProcesos(empresaId, nombre,
+                PageRequest.of(pagina, TAMANO_PAGINA))
+                .map(consulta -> modelMapper.map(consulta, RolProcesoConsultaResponse.class));
+        return PageResponse.from(page);
     }
 }

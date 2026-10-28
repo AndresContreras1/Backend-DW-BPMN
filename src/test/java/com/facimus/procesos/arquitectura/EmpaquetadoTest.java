@@ -8,6 +8,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static com.tngtech.archunit.base.DescribedPredicate.not;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
@@ -89,12 +91,13 @@ class EmpaquetadoTest {
     }
 
     @Test
-    @DisplayName("Los servicios no dependen de controllers")
+    @DisplayName("Los servicios no dependen de controllers (salvo los DTOs de controller.dto)")
     void servicios_no_dependen_de_controllers() {
         noClasses()
                 .that().resideInAPackage("..service..")
-                .should().dependOnClassesThat().resideInAPackage("..controller..")
-                .because("La capa de servicio no debe conocer la capa de presentacion")
+                .should().dependOnClassesThat(
+                        resideInAPackage("..controller..").and(not(resideInAPackage("..controller.dto.."))))
+                .because("La capa de servicio no debe conocer los controllers; solo arma los DTO Response que ellos devuelven")
                 .check(clases);
     }
 

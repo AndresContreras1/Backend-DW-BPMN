@@ -1,5 +1,16 @@
 package com.facimus.procesos.gestion.service;
 
+import com.facimus.procesos.gestion.controller.dto.ProcesoDiagramaResponse;
+import com.facimus.procesos.gestion.controller.dto.ProcesoResponse;
+import com.facimus.procesos.modelado.controller.dto.ActividadResponse;
+import com.facimus.procesos.modelado.controller.dto.ArcoResponse;
+import com.facimus.procesos.modelado.controller.dto.EventoMensajeResponse;
+import com.facimus.procesos.modelado.controller.dto.GatewayResponse;
+import com.facimus.procesos.modelado.controller.dto.LaneResponse;
+import com.facimus.procesos.modelado.controller.dto.MensajeResponse;
+import com.facimus.procesos.modelado.controller.dto.PoolResponse;
+import org.modelmapper.ModelMapper;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -34,6 +45,7 @@ public class ProcesoDiagramaServiceImpl implements ProcesoDiagramaService {
     private final NodoFlujoService nodoFlujoService;
     private final ArcoService arcoService;
     private final MensajeService mensajeService;
+    private final ModelMapper modelMapper;
 
     @Transactional(readOnly = true)
     @Override
@@ -51,5 +63,20 @@ public class ProcesoDiagramaServiceImpl implements ProcesoDiagramaService {
         List<Arco> arcos = arcoService.listarActivosPorProceso(empresaId, procesoId);
         List<Mensaje> mensajes = mensajeService.listarPorProceso(empresaId, procesoId);
         return new ProcesoDiagrama(proceso, pools, lanes, actividades, gateways, eventos, arcos, mensajes);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public ProcesoDiagramaResponse consultarDiagrama(Long empresaId, Long procesoId) {
+        ProcesoDiagrama diagrama = obtener(empresaId, procesoId);
+        return new ProcesoDiagramaResponse(
+                modelMapper.map(diagrama.proceso(), ProcesoResponse.class),
+                diagrama.pools().stream().map(p -> modelMapper.map(p, PoolResponse.class)).toList(),
+                diagrama.lanes().stream().map(l -> modelMapper.map(l, LaneResponse.class)).toList(),
+                diagrama.actividades().stream().map(a -> modelMapper.map(a, ActividadResponse.class)).toList(),
+                diagrama.gateways().stream().map(g -> modelMapper.map(g, GatewayResponse.class)).toList(),
+                diagrama.eventos().stream().map(e -> modelMapper.map(e, EventoMensajeResponse.class)).toList(),
+                diagrama.arcos().stream().map(a -> modelMapper.map(a, ArcoResponse.class)).toList(),
+                diagrama.mensajes().stream().map(m -> modelMapper.map(m, MensajeResponse.class)).toList());
     }
 }

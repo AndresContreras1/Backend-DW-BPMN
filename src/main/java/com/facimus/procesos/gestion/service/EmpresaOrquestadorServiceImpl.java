@@ -1,5 +1,9 @@
 package com.facimus.procesos.gestion.service;
 
+import com.facimus.procesos.gestion.controller.dto.EmpresaResponse;
+import com.facimus.procesos.gestion.controller.dto.RegistroEmpresaRequest;
+import org.modelmapper.ModelMapper;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +23,7 @@ public class EmpresaOrquestadorServiceImpl implements EmpresaOrquestadorService 
 
     private final EmpresaService empresaService;
     private final UsuarioService usuarioService;
+    private final ModelMapper modelMapper;
 
     @Transactional
     @Override
@@ -28,5 +33,13 @@ public class EmpresaOrquestadorServiceImpl implements EmpresaOrquestadorService 
         usuarioService.crearColaborador(empresa.getId(), nombreAdmin, emailAdmin, passwordAdmin,
                 RolAcceso.ADMINISTRADOR);
         return empresa;
+    }
+
+    @Transactional
+    @Override
+    public EmpresaResponse registrarConAdministrador(RegistroEmpresaRequest request) {
+        Empresa empresa = registrarConAdministrador(request.nombreEmpresa(), request.nit(),
+                request.correoContacto(), request.nombreAdmin(), request.emailAdmin(), request.passwordAdmin());
+        return modelMapper.map(empresa, EmpresaResponse.class);
     }
 }

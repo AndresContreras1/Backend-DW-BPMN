@@ -1,5 +1,8 @@
 package com.facimus.procesos.modelado.service;
 
+import com.facimus.procesos.modelado.controller.dto.EventoMensajeRequest;
+import com.facimus.procesos.modelado.controller.dto.EventoMensajeResponse;
+import org.modelmapper.ModelMapper;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -22,6 +25,7 @@ public class EventoMensajeServiceImpl implements EventoMensajeService {
     private final LaneService laneService;
     private final ArcoService arcoService;
     private final AuditoriaModeladoService auditoriaModeladoService;
+    private final ModelMapper modelMapper;
 
     @Transactional
     @Override
@@ -114,6 +118,37 @@ public class EventoMensajeServiceImpl implements EventoMensajeService {
                 .filter(EventoMensaje.class::isInstance)
                 .map(EventoMensaje.class::cast)
                 .toList();
+    }
+
+    @Transactional
+    @Override
+    public EventoMensajeResponse crear(Long empresaId, Long laneId, EventoMensajeRequest request) {
+        EventoMensaje evento = crear(empresaId, laneId, request.nombre(), request.tipoEvento(),
+                request.contenido(), request.claveCorrelacion(), request.posicionX(),
+                request.posicionY(), request.origenExterno());
+        return modelMapper.map(evento, EventoMensajeResponse.class);
+    }
+
+    @Transactional
+    @Override
+    public EventoMensajeResponse editar(Long empresaId, Long eventoId, EventoMensajeRequest request) {
+        EventoMensaje evento = editar(empresaId, eventoId, request.nombre(), request.tipoEvento(),
+                request.contenido(), request.claveCorrelacion(), request.posicionX(),
+                request.posicionY(), request.origenExterno());
+        return modelMapper.map(evento, EventoMensajeResponse.class);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public EventoMensajeResponse consultarDetalle(Long empresaId, Long eventoId) {
+        return modelMapper.map(obtener(empresaId, eventoId), EventoMensajeResponse.class);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<EventoMensajeResponse> consultarPorLane(Long empresaId, Long laneId) {
+        return listarPorLane(empresaId, laneId).stream()
+                .map(e -> modelMapper.map(e, EventoMensajeResponse.class)).toList();
     }
 
     private void validarProcesoActivo(Proceso proceso) {

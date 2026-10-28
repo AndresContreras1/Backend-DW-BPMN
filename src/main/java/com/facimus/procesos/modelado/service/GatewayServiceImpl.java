@@ -1,5 +1,9 @@
 package com.facimus.procesos.modelado.service;
 
+import com.facimus.procesos.modelado.controller.dto.GatewayRequest;
+import com.facimus.procesos.modelado.controller.dto.GatewayResponse;
+import com.facimus.procesos.modelado.controller.dto.ImpactoEliminacionResponse;
+import org.modelmapper.ModelMapper;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -23,6 +27,7 @@ public class GatewayServiceImpl implements GatewayService {
     private final LaneService laneService;
     private final ArcoService arcoService;
     private final AuditoriaModeladoService auditoriaModeladoService;
+    private final ModelMapper modelMapper;
 
     @Transactional
     @Override
@@ -140,6 +145,42 @@ public class GatewayServiceImpl implements GatewayService {
                 .filter(Gateway.class::isInstance)
                 .map(Gateway.class::cast)
                 .toList();
+    }
+
+    @Transactional
+    @Override
+    public GatewayResponse crear(Long empresaId, Long laneId, GatewayRequest request) {
+        Gateway gateway = crear(empresaId, laneId, request.nombre(), request.tipoGateway(),
+                request.posicionX(), request.posicionY());
+        return modelMapper.map(gateway, GatewayResponse.class);
+    }
+
+    @Transactional
+    @Override
+    public GatewayResponse editar(Long empresaId, Long gatewayId, GatewayRequest request) {
+        Gateway gateway = editar(empresaId, gatewayId, request.nombre(), request.tipoGateway(),
+                request.posicionX(), request.posicionY());
+        return modelMapper.map(gateway, GatewayResponse.class);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public GatewayResponse consultarDetalle(Long empresaId, Long gatewayId) {
+        return modelMapper.map(obtener(empresaId, gatewayId), GatewayResponse.class);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<GatewayResponse> consultarPorLane(Long empresaId, Long laneId) {
+        return listarPorLane(empresaId, laneId).stream()
+                .map(g -> modelMapper.map(g, GatewayResponse.class)).toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public ImpactoEliminacionResponse consultarImpactoEliminacion(Long empresaId, Long gatewayId) {
+        return modelMapper.map(evaluarImpactoEliminacion(empresaId, gatewayId),
+                ImpactoEliminacionResponse.class);
     }
 
     private void validarProcesoActivo(Proceso proceso) {

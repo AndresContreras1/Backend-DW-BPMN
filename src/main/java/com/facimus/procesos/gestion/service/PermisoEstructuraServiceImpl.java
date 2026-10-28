@@ -1,5 +1,9 @@
 package com.facimus.procesos.gestion.service;
 
+import com.facimus.procesos.gestion.controller.dto.PermisoEstructuraRequest;
+import com.facimus.procesos.gestion.controller.dto.PermisoEstructuraResponse;
+import org.modelmapper.ModelMapper;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -21,6 +25,7 @@ public class PermisoEstructuraServiceImpl implements PermisoEstructuraService {
 
     private final PermisoEstructuraRepository permisoEstructuraRepository;
     private final EmpresaService empresaService;
+    private final ModelMapper modelMapper;
 
     @Transactional(readOnly = true)
     @Override
@@ -93,5 +98,21 @@ public class PermisoEstructuraServiceImpl implements PermisoEstructuraService {
             permiso.setEliminarLane(false);
         }
         return permiso;
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<PermisoEstructuraResponse> consultarPorEmpresa(Long empresaId) {
+        return listar(empresaId).stream()
+                .map(p -> modelMapper.map(p, PermisoEstructuraResponse.class))
+                .toList();
+    }
+
+    @Transactional
+    @Override
+    public PermisoEstructuraResponse actualizar(Long empresaId, RolAcceso rol, PermisoEstructuraRequest request) {
+        PermisoEstructura permiso = actualizar(empresaId, rol, request.crearPool(), request.editarPool(),
+                request.eliminarPool(), request.crearLane(), request.editarLane(), request.eliminarLane());
+        return modelMapper.map(permiso, PermisoEstructuraResponse.class);
     }
 }

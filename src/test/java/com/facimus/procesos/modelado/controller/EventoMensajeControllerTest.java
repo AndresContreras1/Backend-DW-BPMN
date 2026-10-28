@@ -12,12 +12,14 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.facimus.procesos.config.ModelMapperConfig;
+import org.modelmapper.ModelMapper;
+import com.facimus.procesos.modelado.controller.dto.EventoMensajeRequest;
+import com.facimus.procesos.modelado.controller.dto.EventoMensajeResponse;
 import com.facimus.procesos.gestion.model.RolAcceso;
 import com.facimus.procesos.modelado.model.EventoMensaje;
 import com.facimus.procesos.modelado.model.Lane;
@@ -25,17 +27,17 @@ import com.facimus.procesos.modelado.model.TipoEventoMensaje;
 import com.facimus.procesos.modelado.service.EventoMensajeService;
 
 @WebMvcTest(EventoMensajeController.class)
-@Import(ModelMapperConfig.class)
 class EventoMensajeControllerTest {
+
+    private static final ModelMapper MAPPER = new ModelMapperConfig().modelMapper();
 
     @Autowired MockMvc mockMvc;
     @MockitoBean EventoMensajeService service;
 
     @Test
     void crear_retorna_201() throws Exception {
-        EventoMensaje evento = evento(5L, "Orden", TipoEventoMensaje.THROW);
-        given(service.crear(eq(1L), eq(2L), anyString(), eq(TipoEventoMensaje.THROW),
-                anyString(), anyString(), anyInt(), anyInt(), anyBoolean())).willReturn(evento);
+        var evento = evento(5L, "Orden", TipoEventoMensaje.THROW);
+        given(service.crear(eq(1L), eq(2L), any(EventoMensajeRequest.class))).willReturn(evento);
 
         mockMvc.perform(post("/api/v1/lanes/2/eventos-mensaje")
                 .with(principal(RolAcceso.EDITOR))
@@ -51,9 +53,9 @@ class EventoMensajeControllerTest {
 
     @Test
     void detalle_y_listado_retornan_200() throws Exception {
-        EventoMensaje evento = evento(5L, "Orden", TipoEventoMensaje.CATCH_INTERMEDIO);
-        given(service.obtener(1L, 5L)).willReturn(evento);
-        given(service.listarPorLane(1L, 2L)).willReturn(List.of(evento));
+        var evento = evento(5L, "Orden", TipoEventoMensaje.CATCH_INTERMEDIO);
+        given(service.consultarDetalle(1L, 5L)).willReturn(evento);
+        given(service.consultarPorLane(1L, 2L)).willReturn(List.of(evento));
 
         mockMvc.perform(get("/api/v1/eventos-mensaje/5").with(principal(RolAcceso.EDITOR)))
                 .andExpect(status().isOk())
@@ -66,9 +68,8 @@ class EventoMensajeControllerTest {
 
     @Test
     void editar_retorna_200() throws Exception {
-        EventoMensaje evento = evento(5L, "Orden v2", TipoEventoMensaje.CATCH_INTERMEDIO);
-        given(service.editar(eq(1L), eq(5L), anyString(), any(), anyString(), anyString(),
-                anyInt(), anyInt(), anyBoolean())).willReturn(evento);
+        var evento = evento(5L, "Orden v2", TipoEventoMensaje.CATCH_INTERMEDIO);
+        given(service.editar(eq(1L), eq(5L), any(EventoMensajeRequest.class))).willReturn(evento);
 
         mockMvc.perform(put("/api/v1/eventos-mensaje/5")
                 .with(principal(RolAcceso.EDITOR))
@@ -95,7 +96,7 @@ class EventoMensajeControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    private EventoMensaje evento(Long id, String nombre, TipoEventoMensaje tipo) {
+    private EventoMensajeResponse evento(Long id, String nombre, TipoEventoMensaje tipo) {
         Lane lane = new Lane(); lane.setId(2L);
         EventoMensaje e = new EventoMensaje();
         e.setId(id);
@@ -107,6 +108,6 @@ class EventoMensajeControllerTest {
         e.setPosicionY(20);
         e.setLane(lane);
         e.setActivo(true);
-        return e;
+        return MAPPER.map(e, EventoMensajeResponse.class);
     }
 }

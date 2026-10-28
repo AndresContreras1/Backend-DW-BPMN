@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.modelmapper.ModelMapper;
 
 import com.facimus.procesos.gestion.controller.dto.PermisoEstructuraRequest;
 import com.facimus.procesos.gestion.controller.dto.PermisoEstructuraResponse;
@@ -37,7 +36,6 @@ import lombok.RequiredArgsConstructor;
 public class PermisoEstructuraController {
 
     private final PermisoEstructuraService permisoEstructuraService;
-    private final ModelMapper modelMapper;
 
     @GetMapping
     @Operation(summary = "Consultar los permisos configurados", description = "Devuelve la configuracion de permisos por rol de acceso de la empresa.")
@@ -46,8 +44,7 @@ public class PermisoEstructuraController {
     @ApiResponse(responseCode = "401", description = "No autenticado: token ausente o invalido.",
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<List<PermisoEstructuraResponse>> listar(@AuthenticationPrincipal ApiPrincipal principal) {
-        return ResponseEntity.ok(permisoEstructuraService.listar(principal.empresaId()).stream()
-                .map(p -> modelMapper.map(p, PermisoEstructuraResponse.class)).toList());
+        return ResponseEntity.ok(permisoEstructuraService.consultarPorEmpresa(principal.empresaId()));
     }
 
     @PutMapping("/{rol}")
@@ -63,9 +60,6 @@ public class PermisoEstructuraController {
     public ResponseEntity<PermisoEstructuraResponse> actualizar(@PathVariable RolAcceso rol,
             @RequestBody PermisoEstructuraRequest request,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        var permiso = permisoEstructuraService.actualizar(principal.empresaId(), rol,
-                request.crearPool(), request.editarPool(), request.eliminarPool(),
-                request.crearLane(), request.editarLane(), request.eliminarLane());
-        return ResponseEntity.ok(modelMapper.map(permiso, PermisoEstructuraResponse.class));
+        return ResponseEntity.ok(permisoEstructuraService.actualizar(principal.empresaId(), rol, request));
     }
 }

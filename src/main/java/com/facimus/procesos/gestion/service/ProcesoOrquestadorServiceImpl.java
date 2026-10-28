@@ -1,5 +1,9 @@
 package com.facimus.procesos.gestion.service;
 
+import com.facimus.procesos.gestion.controller.dto.ProcesoRequest;
+import com.facimus.procesos.gestion.controller.dto.ProcesoResponse;
+import org.modelmapper.ModelMapper;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +24,7 @@ public class ProcesoOrquestadorServiceImpl implements ProcesoOrquestadorService 
 
     private final ProcesoService procesoService;
     private final PoolService poolService;
+    private final ModelMapper modelMapper;
 
     @Transactional
     @Override
@@ -29,5 +34,13 @@ public class ProcesoOrquestadorServiceImpl implements ProcesoOrquestadorService 
         poolService.crear(empresaId, proceso.getId(), proceso.getEmpresa().getNombre(),
                 TipoParticipante.EMPRESA, false);
         return proceso;
+    }
+
+    @Transactional
+    @Override
+    public ProcesoResponse crearConPoolInicial(Long empresaId, Long usuarioId, ProcesoRequest request) {
+        Proceso proceso = crearConPoolInicial(empresaId, usuarioId, request.nombre(), request.descripcion(),
+                request.categoria());
+        return modelMapper.map(proceso, ProcesoResponse.class);
     }
 }

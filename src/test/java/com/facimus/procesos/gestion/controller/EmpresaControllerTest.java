@@ -9,15 +9,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.facimus.procesos.gestion.model.Empresa;
+import com.facimus.procesos.gestion.controller.dto.EmpresaResponse;
+import com.facimus.procesos.gestion.controller.dto.RegistroEmpresaRequest;
 import com.facimus.procesos.gestion.service.EmpresaOrquestadorService;
 
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 
-import com.facimus.procesos.config.ModelMapperConfig;
-
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -26,7 +24,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 
 @WebMvcTest(EmpresaController.class)
-@Import(ModelMapperConfig.class)
 class EmpresaControllerTest {
 
     @Autowired
@@ -38,15 +35,11 @@ class EmpresaControllerTest {
     @Test
     @DisplayName("POST /api/v1/empresas - registrar empresa exitoso (201)")
     void registrar_exitoso() throws Exception {
-        Empresa empresa = new Empresa();
-        empresa.setId(1L);
-        empresa.setNombre("Acme Corp");
-        empresa.setNit("900123456");
-        empresa.setCorreoContacto("info@acme.com");
-        empresa.setFechaRegistro(LocalDate.now());
+        EmpresaResponse empresa = new EmpresaResponse(1L, "Acme Corp", "900123456", "info@acme.com",
+                LocalDate.now());
 
-        given(empresaOrquestadorService.registrarConAdministrador(anyString(), anyString(), anyString(),
-                anyString(), anyString(), anyString())).willReturn(empresa);
+        given(empresaOrquestadorService.registrarConAdministrador(any(RegistroEmpresaRequest.class)))
+                .willReturn(empresa);
 
         mockMvc.perform(post("/api/v1/empresas")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -66,8 +59,8 @@ class EmpresaControllerTest {
                 .andExpect(jsonPath("$.nombre").value("Acme Corp"))
                 .andExpect(jsonPath("$.nit").value("900123456"));
 
-        verify(empresaOrquestadorService).registrarConAdministrador("Acme Corp", "900123456",
-                "info@acme.com", "Admin", "admin@acme.com", "secret123");
+        verify(empresaOrquestadorService).registrarConAdministrador(new RegistroEmpresaRequest("Acme Corp",
+                "900123456", "info@acme.com", "Admin", "admin@acme.com", "secret123"));
     }
 
     @Test
