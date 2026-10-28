@@ -47,7 +47,7 @@ public class SecurityConfig {
                 // Se deja habilitado globalmente y se exime solo estas rutas en vez de un disable() total,
                 // que es lo que disparaba la alerta del scan de seguridad.
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/api/v1/**", "/h2-console/**"))
-                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
+                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
