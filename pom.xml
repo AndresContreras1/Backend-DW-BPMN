@@ -21,6 +21,7 @@
 		<sonar.projectKey>AndresContreras1_Backend-DW-BPMN</sonar.projectKey>
 		<sonar.projectName>Facimus Procesos Backend</sonar.projectName>
 		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
+		<sonar.exclusions>**/dto/**,**/config/**,**/*Application.java</sonar.exclusions>
 		<sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
 		<sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
 	</properties>
@@ -173,6 +174,13 @@
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>0.8.13</version>
+				<configuration>
+					<excludes>
+						<exclude>**/dto/**</exclude>
+						<exclude>**/config/**</exclude>
+						<exclude>**/*Application.class</exclude>
+					</excludes>
+				</configuration>
 				<executions>
 					<execution>
 						<goals>
@@ -193,6 +201,24 @@
 						</goals>
 						<configuration>
 							<rules>
+								<rule>
+									<element>PACKAGE</element>
+									<includes>
+										<include>com.facimus.procesos.*.service</include>
+									</includes>
+									<limits>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.70</minimum>
+										</limit>
+										<limit>
+											<counter>BRANCH</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.60</minimum>
+										</limit>
+									</limits>
+								</rule>
 								<rule>
 									<element>BUNDLE</element>
 									<limits>
