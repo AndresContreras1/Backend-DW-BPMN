@@ -29,8 +29,7 @@ import com.facimus.procesos.modelado.service.MensajeService;
 import com.facimus.procesos.modelado.service.PoolService;
 
 /**
- * Prueba de integracion pedida por la review del PR #37 (hallazgo bloqueante en
- * CorrelacionController): si falla guardar el mensaje con la nueva clave de correlacion, la
+ * Prueba de integracion de atomicidad en CorrelacionOrquestadorService: si falla guardar el mensaje con la nueva clave de correlacion, la
  * correlacion tampoco debe quedar persistida. Usa el contexto Spring real y la base H2 real;
  * solo MensajeService se reemplaza por un mock (stubando obtener/listarTodosPorProceso con el
  * fixture real y forzando la excepcion en guardar), para que CorrelacionService haga una

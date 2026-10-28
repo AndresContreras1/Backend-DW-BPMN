@@ -30,8 +30,7 @@ import com.facimus.procesos.modelado.service.PoolOrquestadorService;
 import com.facimus.procesos.modelado.service.PoolService;
 
 /**
- * Prueba de integracion pedida por la review del PR #37 (hallazgo bloqueante en
- * PoolController): si falla el ultimo paso (eliminar el registro del pool), las lanes que ya se
+ * Prueba de integracion de atomicidad en PoolOrquestadorService: si falla el ultimo paso (eliminar el registro del pool), las lanes que ya se
  * borraron en el paso anterior deben quedar restauradas (rollback real de toda la transaccion).
  * Usa el contexto Spring real y la base H2 real; solo PoolService se reemplaza por un mock
  * (dejando LaneService real, para que el borrado de lanes sea una escritura real que despues se

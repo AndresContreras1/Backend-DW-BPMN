@@ -27,7 +27,7 @@ import com.facimus.procesos.modelado.service.PoolService;
 
 /**
  * El caso de uso HU-04 (crear proceso + pool inicial) debe quedar atomico: si
- * PoolService.crear falla, la review de PR #37 exige que el proceso no quede persistido sin su
+ * PoolService.crear falla, se exige que el proceso no quede persistido sin su
  * pool inicial. A nivel unitario se confirma el orden de llamadas y que una excepcion en el
  * segundo paso se propaga sin swallow.
  */

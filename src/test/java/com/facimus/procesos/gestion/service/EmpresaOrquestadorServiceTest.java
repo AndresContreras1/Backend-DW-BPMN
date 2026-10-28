@@ -26,7 +26,7 @@ import com.facimus.procesos.gestion.model.RolAcceso;
 
 /**
  * El caso de uso HU-01 (registrar empresa + administrador inicial) debe quedar atomico: si
- * UsuarioService.crearColaborador falla, la review de PR #37 exige que la Empresa no quede
+ * UsuarioService.crearColaborador falla, se exige que la Empresa no quede
  * persistida sin administrador. A nivel unitario no se puede probar el rollback real (eso lo
  * cubre la prueba de integracion), pero si se puede confirmar el orden de llamadas y que una
  * excepcion en el segundo paso se propaga sin swallow.

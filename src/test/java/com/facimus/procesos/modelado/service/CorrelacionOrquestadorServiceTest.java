@@ -31,7 +31,7 @@ import com.facimus.procesos.modelado.model.Mensaje;
 
 /**
  * El caso de uso HU-28 (definir/eliminar la correlacion de un mensaje) debe quedar atomico: si
- * la segunda escritura (MensajeService.guardar) falla, la review de PR #37 exige que la
+ * la segunda escritura (MensajeService.guardar) falla, se exige que la
  * Correlacion no quede persistida sin reflejarse en Mensaje.claveCorrelacion. A nivel unitario se
  * confirma el orden de llamadas y que una excepcion en el segundo paso se propaga sin swallow.
  */

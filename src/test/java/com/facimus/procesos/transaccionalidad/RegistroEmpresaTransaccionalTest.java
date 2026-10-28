@@ -19,8 +19,7 @@ import com.facimus.procesos.gestion.service.EmpresaOrquestadorService;
 import com.facimus.procesos.gestion.service.UsuarioService;
 
 /**
- * Prueba de integracion pedida por la review del PR #37 (hallazgo bloqueante en
- * EmpresaController): si falla la creacion del administrador, la empresa no debe quedar
+ * Prueba de integracion de atomicidad en EmpresaOrquestadorService: si falla la creacion del administrador, la empresa no debe quedar
  * persistida sin su administrador. Usa el contexto Spring real y la base H2 real; solo
  * UsuarioService se reemplaza por un mock para forzar el fallo del segundo paso de forma
  * deterministica.

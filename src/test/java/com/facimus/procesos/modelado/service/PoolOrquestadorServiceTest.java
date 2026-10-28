@@ -22,7 +22,7 @@ import com.facimus.procesos.modelado.model.Pool;
 
 /**
  * El caso de uso de eliminar un pool (verificar eliminable + borrar lanes + eliminar registro)
- * debe quedar atomico: si la ultima escritura falla, la review de PR #37 exige que las lanes no
+ * debe quedar atomico: si la ultima escritura falla, se exige que las lanes no
  * queden borradas sin haberse eliminado el pool. A nivel unitario se confirma el orden de
  * llamadas y que una excepcion detiene la secuencia sin continuar con los pasos siguientes.
  */

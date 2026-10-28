@@ -30,7 +30,7 @@ import com.facimus.procesos.modelado.service.PoolService;
 import java.time.LocalDateTime;
 
 /**
- * Issue #42 (configurar FetchType.LAZY en todas las relaciones @ManyToOne): Arco.origen y
+ * Relaciones @ManyToOne con FetchType.LAZY: Arco.origen y
  * Arco.destino son LAZY, pero ArcoService.validarConexion hace {@code instanceof Gateway}/
  * {@code instanceof EventoMensaje} sobre ellos (NodoFlujo es SINGLE_TABLE). Un proxy LAZY sin
  * inicializar siempre falla ese instanceof sin importar la subclase real, lo que dejaria pasar

@@ -32,7 +32,7 @@ import com.facimus.procesos.modelado.service.LaneService;
 import com.facimus.procesos.modelado.service.PoolService;
 
 /**
- * Criterio de aceptacion explicito de la review del PR #37: las reglas de negocio que se
+ * Criterio de aceptacion explicito: las reglas de negocio que se
  * movieron a eventos de dominio (ver ProcesoService.cambiarEstado y PoolService.editar) deben
  * cumplirse aunque el Service se llame directamente, sin pasar por ningun Controller ni
  * orquestador. No hay mocks en esta clase: todo el grafo de beans es real (contexto Spring +

@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * HU-01: registro de empresa. La creacion del usuario administrador inicial la orquesta
- * EmpresaController (llama a UsuarioService despues de este metodo) para no crear una
+ * EmpresaOrquestadorService (llama a UsuarioService despues de este metodo) para no crear una
  * dependencia circular EmpresaService<->UsuarioService.
  */
 @Service

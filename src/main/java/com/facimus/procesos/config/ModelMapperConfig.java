@@ -49,7 +49,7 @@ import com.facimus.procesos.modelado.service.dto.ImpactoEliminacion;
 
 /**
  * Registra el mapeo Entity -> DTO de respuesta para todos los casos de "una entidad
- * mapea a un DTO" (usados por los controllers vía {@code modelMapper.map(entity, X.class)}).
+ * mapea a un DTO" (usados por los services, dentro de la transaccion, vía {@code modelMapper.map(entity, X.class)}).
  * <p>
  * Los DTOs que NO estan aqui (p. ej. {@code LoginResponse}, {@code ProcesoDetalleResponse},
  * {@code ProcesoDiagramaResponse}) se construyen a mano a proposito: necesitan logica de

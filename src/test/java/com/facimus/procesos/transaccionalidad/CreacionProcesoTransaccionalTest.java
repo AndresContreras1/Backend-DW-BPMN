@@ -23,8 +23,7 @@ import com.facimus.procesos.gestion.service.UsuarioService;
 import com.facimus.procesos.modelado.service.PoolService;
 
 /**
- * Prueba de integracion pedida por la review del PR #37 (hallazgo bloqueante en
- * ProcesoController): si falla la creacion del pool inicial, el proceso no debe quedar
+ * Prueba de integracion de atomicidad en ProcesoOrquestadorService: si falla la creacion del pool inicial, el proceso no debe quedar
  * persistido sin su estructura inicial. Usa el contexto Spring real y la base H2 real; solo
  * PoolService se reemplaza por un mock para forzar el fallo del segundo paso de forma
  * deterministica (EmpresaService y UsuarioService siguen siendo los reales, para construir el

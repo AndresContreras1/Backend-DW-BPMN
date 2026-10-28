@@ -24,7 +24,7 @@ import com.facimus.procesos.gestion.service.UsuarioService;
 import com.facimus.procesos.gestion.service.dto.ProcesoCompartidoDetalle;
 
 /**
- * Issue #42 (configurar FetchType.LAZY en todas las relaciones @ManyToOne): ProcesoCompartido
+ * Relaciones @ManyToOne con FetchType.LAZY: ProcesoCompartido
  * tiene 3 relaciones LAZY (empresa, proceso, empresaInvitada) y el DTO de respuesta las navega
  * todas (ver ModelMapperConfig, converter de ProcesoCompartido) desde el controller, es decir
  * fuera de la transaccion del service. Este test llama a ProcesoCompartidoService igual que lo
