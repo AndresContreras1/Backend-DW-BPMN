@@ -1,510 +1,291 @@
-# Guia tecnica del backend — Sistema de Gestion de Procesos
+# Guía técnica
 
-Documento interno del equipo. Describe el estado actual del backend, las
-decisiones vigentes, la infraestructura de CI/CD, el despliegue en Docker y
-las guias que todo colaborador debe seguir para contribuir sin romper las
-garantias que ya estan en pie.
+Documento de referencia del backend `com.facimus.procesos`. Para instalar y ejecutar el proyecto, ver el [README](../README.md).
 
-Ultima actualizacion: 2026-10-02 (rama `refactor/modelmapper-y-separacion-repositorios`, PR #37).
+## 1. Stack
 
----
-
-## 1. Estado actual del proyecto
-
-### Stack tecnologico
-
-| Componente | Version |
+| Componente | Detalle |
 |---|---|
-| Java | 21 (Temurin) |
-| Spring Boot | 4.1 |
-| API | REST exclusivo (JSON + JWT stateless) |
-| ORM | Hibernate (via Spring Data JPA) |
-| BD desarrollo | H2 embebida en archivo (`./data/`) |
-| BD produccion | PostgreSQL (via perfil `prod`) |
-| Seguridad | Spring Security + JWT (Bearer token) |
-| Cifrado de passwords | BCrypt |
-| Tests de arquitectura | ArchUnit 1.4.0 |
-| Cobertura | JaCoCo 0.8.13 |
-| Analisis de calidad | SonarCloud |
-| CI/CD | GitHub Actions |
-| Contenedorizacion | Docker (multi-stage build) |
-| Documentacion API | springdoc-openapi (Swagger UI) |
-| Mapeo entidad-DTO | ModelMapper 3.2.0 |
+| Lenguaje | Java 21 |
+| Framework | Spring Boot 4.1.0: `spring-boot-starter-webmvc`, `-data-jpa`, `-validation`, `-security`, `-flyway` |
+| Autenticación | JWT con jjwt 0.12.6, firma HS256, contraseñas con BCrypt |
+| Persistencia | Hibernate/JPA; H2 (perfil por defecto y pruebas) y PostgreSQL (`prod`) |
+| Migraciones | Flyway (`flyway-database-postgresql` para PostgreSQL) |
+| Mapeo | ModelMapper 3.2.0 |
+| API docs | springdoc-openapi-starter-webmvc-ui 3.0.1 |
+| Utilidades | Lombok, Spring Boot DevTools (opcional, solo desarrollo) |
+| Pruebas | JUnit 5, Mockito, Spring Boot Test, Spring Security Test, ArchUnit 1.4.0 |
+| Calidad | JaCoCo 0.8.13 y SonarCloud |
 
-### Entidades implementadas (17)
+## 2. Inventario del código
 
-**Bloque gestion** (8): `Empresa`, `Usuario`, `Proceso`, `HistorialCambio`,
-`RolProceso`, `InvitacionUsuario`, `PermisoEstructura`, `ProcesoCompartido`.
+Cifras contadas sobre `src/main/java` del estado actual:
 
-**Bloque modelado** (9): `Pool`, `Lane`, `NodoFlujo` (abstracta), `Actividad`,
-`Gateway`, `EventoMensaje`, `Arco`, `Mensaje`, `Correlacion`.
-
-**Enums** (9): `RolAcceso`, `EstadoProceso` (gestion); `TipoParticipante`,
-`TipoGateway`, `TipoActividad`, `TipoEventoMensaje`, `TipoDestinoExterno`,
-`PoliticaFalloNotificacion`, `PoliticaMensajeSinCaso` (modelado). Ademas,
-`OperacionEstructura` vive en `gestion/service/` (no en `model/`): enumera las
-operaciones que `PermisoEstructuraService` autoriza por rol (crear/editar/
-eliminar pool o lane).
-
-Todas las entidades excepto `Empresa` extienden `EntidadEmpresa`
-(`@MappedSuperclass`) que aporta la columna `empresa_id` con
-`updatable = false`.
-
-### Servicios implementados (24)
-
-**Bloque gestion** (11): `EmpresaService`, `UsuarioService`, `ProcesoService`,
-`HistorialCambioService`, `RolProcesoService`, `InvitacionUsuarioService`,
-`PermisoEstructuraService`, `ProcesoCompartidoService`,
-`ProcesoDiagramaService`, y los orquestadores `EmpresaOrquestadorService`,
-`ProcesoOrquestadorService`.
-
-**Bloque modelado** (13): `PoolService`, `LaneService`, `ActividadService`,
-`GatewayService`, `ArcoService`, `MensajeService`, `CorrelacionService`,
-`EventoMensajeService`, `NodoFlujoService`, `AuditoriaModeladoService`,
-`ValidacionModeloService`, y los orquestadores `PoolOrquestadorService`,
-`CorrelacionOrquestadorService`.
-
-Todos reciben `empresaId` del controlador (extraido del `ApiPrincipal`
-autenticado) y lo usan para acotar cada operacion al tenant correcto. Sobre
-los 4 orquestadores (resaltados arriba) ver la seccion 2.8.
-
-### Controladores REST (16)
-
-| Modulo | Controlador | Base path |
+| Elemento | Cantidad | Detalle |
 |---|---|---|
-| Auth | `AuthController` | `/api/v1/auth` |
-| Empresas | `EmpresaController` | `/api/v1/empresas` |
-| Usuarios | `UsuarioController` | `/api/v1/usuarios` |
-| Invitaciones | `InvitacionUsuarioController` | `/api/v1/usuarios/invitaciones` |
-| Permisos de estructura | `PermisoEstructuraController` | `/api/v1/permisos-estructura` |
-| Procesos | `ProcesoController` | `/api/v1/procesos` |
-| Procesos compartidos | `ProcesoCompartidoController` | `/api/v1/procesos/{id}/compartidos`, `/api/v1/procesos-compartidos` |
-| Roles | `RolProcesoController` | `/api/v1/roles` |
-| Pools | `PoolController` | `/api/v1/procesos/{id}/pools`, `/api/v1/pools/{id}` |
-| Lanes | `LaneController` | `/api/v1/pools/{id}/lanes`, `/api/v1/lanes/{id}` |
-| Actividades | `ActividadController` | `/api/v1/lanes/{id}/actividades`, `/api/v1/actividades/{id}` |
-| Gateways | `GatewayController` | `/api/v1/lanes/{id}/gateways`, `/api/v1/gateways/{id}` |
-| Eventos de mensaje | `EventoMensajeController` | `/api/v1/lanes/{id}/eventos-mensaje`, `/api/v1/eventos-mensaje/{id}` |
-| Arcos | `ArcoController` | `/api/v1/arcos`, `/api/v1/pools/{id}/arcos` |
-| Mensajes | `MensajeController` | `/api/v1/procesos/{id}/mensajes`, `/api/v1/mensajes/{id}` |
-| Correlaciones | `CorrelacionController` | `/api/v1/mensajes/{id}/correlacion` |
+| Entidades JPA | 17 | `gestion`: Empresa, Usuario, InvitacionUsuario, PermisoEstructura, Proceso, ProcesoCompartido, RolProceso, HistorialCambio. `modelado`: Pool, Lane, NodoFlujo (abstracta) con Actividad, Gateway y EventoMensaje, Arco, Mensaje, Correlacion |
+| Enums | 9 | `gestion`: RolAcceso, EstadoProceso. `modelado`: TipoActividad, TipoGateway, TipoEventoMensaje, TipoParticipante, TipoDestinoExterno, PoliticaFalloNotificacion, PoliticaMensajeSinCaso |
+| Controllers | 17 | 8 en `gestion` y 9 en `modelado` (incluye `ValidacionModeloController`) |
+| Interfaces de servicio | 25 | Cada una con su clase `Impl`: 11 en `gestion`, 14 en `modelado` |
+| Orquestadores | 5 | Empresa, Proceso, Pool, Lane y Correlacion (están entre las 25 interfaces) |
+| Repositorios | 14 | 8 en `gestion` (incluido `EmpresaRepository`, raíz de la tenencia) y 6 en `modelado` |
+| Eventos de dominio | 3 | `PoolMarcadoCajaNegraEvent`, `PoolParticipanteModificadoEvent`, `ProcesoPublicacionEvent` |
+| Migraciones Flyway | 4 | `V1`, `V2`, `V5` (comunes) y `V3` (solo PostgreSQL) |
 
-Documentacion interactiva disponible en `/swagger-ui/index.html`. Los 16
-controllers tienen `@Tag` (clase) y `@Operation`/`@ApiResponse` (metodo) con
-el DTO real o `ProblemDetail` segun el codigo de respuesta.
+Los enums de `modelado` son `TipoActividad` (TAREA, USUARIO, SERVICIO, MANUAL, SCRIPT, REGLA_NEGOCIO), `TipoGateway` (EXCLUSIVO, PARALELO, INCLUSIVO), `TipoEventoMensaje` (THROW, CATCH_INICIO, CATCH_INTERMEDIO), `TipoParticipante` (EMPRESA, CLIENTE, PROVEEDOR, SISTEMA_EXTERNO), `TipoDestinoExterno` (CORREO, SERVICIO_WEB, COLA), `PoliticaFalloNotificacion` (CONTINUAR_FLUJO, DERIVAR_ACTIVIDAD_ERROR, FINALIZAR_PROCESO) y `PoliticaMensajeSinCaso` (DESCARTAR, INICIAR_CASO_NUEVO). `RolAcceso` es ADMINISTRADOR, EDITOR o SOLO_LECTURA, y `EstadoProceso` es BORRADOR o PUBLICADO.
 
----
+## 3. Decisiones de arquitectura vigentes
 
-## 2. Decisiones de arquitectura vigentes
+### 3.1 Empaquetado modular y capas
 
-Estas decisiones estan protegidas por tests de ArchUnit. Si un PR las
-viola, el CI falla automaticamente. No se deben cambiar sin un ADR nuevo
-discutido con el equipo.
+El código se organiza por dominio (`gestion` y `modelado`) y, dentro de cada módulo, por capa: `controller` (con `dto`), `service`, `repository` y `model`. El flujo es `controller -> service -> repository`.
 
-### 2.1 Empaquetado modular por dominio
+- Los controllers solo conocen servicios; nunca repositorios.
+- Los servicios no conocen la capa web ni las clases de `controller`.
+- Todo servicio es una interfaz `XxxService` con su implementación `XxxServiceImpl`.
+- Los DTO son `record` y viven en `controller/dto`. Las entidades no salen por la API.
+- Un servicio no inyecta el repositorio de otro dominio: pide los datos al servicio dueño. La única excepción es `NodoFlujoRepository`, usado por `NodoFlujoServiceImpl`, que centraliza las consultas de los tres tipos de nodo.
+- No hay `@Transactional` en controllers, ni `System.out`, ni inyección por campo (solo constructor, con `@RequiredArgsConstructor`).
+- `security` no depende de repositorios.
+- `DatosDemoInitializer` es el único componente que usa repositorios saltándose los servicios, a propósito.
 
-```
-com.facimus.procesos
-├── common/       Clases transversales (EntidadEmpresa, excepciones, RepositorioTenant)
-├── config/       Configuracion de Spring (OpenAPI, datos demo)
-├── security/     JWT, filtros, CORS, ApiPrincipal
-├── gestion/      Entidades de gestion del sistema
-│   ├── model/
-│   ├── repository/
-│   ├── service/
-│   └── controller/
-└── modelado/     Entidades del modelado BPMN
-    ├── model/
-    ├── repository/
-    ├── service/
-    └── controller/
-```
+Estas reglas están verificadas por las pruebas ArchUnit (sección 11).
 
-**Reglas verificadas por CI:**
-- Los `@RestController` viven en paquetes `controller/`.
-- Los `@Service` viven en paquetes `service/`.
-- Los `@Entity` viven en paquetes `model/`.
-- Los controllers no acceden directamente a repositorios (deben pasar por
-  servicios).
-- `modelado` no depende de `gestion.controller`.
+### 3.2 Multitenencia por columna
 
-### 2.2 Multi-tenencia por columna directa
+Toda entidad, salvo `Empresa`, extiende `EntidadEmpresa` y tiene la columna `empresa_id` (`nullable = false`, `updatable = false`). Los repositorios de esas entidades extienden `RepositorioTenant<T>`, que obliga a consultar con `findByIdAndEmpresaId` y `findAllByEmpresaId`. El `empresaId` nunca viene del cliente: sale del token JWT a través de `ApiPrincipal` (sección 4). Consultar un recurso de otra empresa responde 404, igual que si no existiera. Hay un índice por `empresa_id` en cada tabla (migración `V2`).
 
-- Toda `@Entity` excepto `Empresa` extiende `EntidadEmpresa`.
-- `empresa_id` es `nullable = false, updatable = false`.
-- Todo repositorio excepto `EmpresaRepository` extiende `RepositorioTenant<T>`,
-  que expone `findByIdAndEmpresaId`, `findAllByEmpresaId` y
-  `existsByIdAndEmpresaId`.
-- **Toda query nueva debe filtrar por `empresaId`. Sin excepciones.** La unica
-  excepcion documentada es `UsuarioRepository.findByEmail()` para el login.
+### 3.3 Herencia SINGLE_TABLE
 
-### 2.3 Herencia JPA
+`NodoFlujo` es abstracta y usa `InheritanceType.SINGLE_TABLE`: `Actividad`, `Gateway` y `EventoMensaje` comparten la tabla `nodos_flujo` con una columna discriminadora (`ACTIVIDAD`, `GATEWAY`, `EVENTO_MENSAJE`). Los arcos conectan cualquier nodo con cualquier otro del mismo pool. La relación entre un Message Catch y las actividades que usan sus datos vive en la tabla `evento_mensaje_actividades` (migración `V5`).
 
-- `NodoFlujo` es abstracta con `@Inheritance(SINGLE_TABLE)` y
-  `@DiscriminatorColumn(name = "tipo_nodo")`.
-- Tiene tres subtipos: `Actividad`, `Gateway` y `EventoMensaje` (Message
-  Throw/Catch).
-- `NodoFlujoRepository` es el unico repositorio compartido entre varios
-  servicios (`ActividadService`, `GatewayService`, `EventoMensajeService`
-  delegan en `NodoFlujoService` en vez de inyectarlo directamente): es la
-  excepcion documentada a la regla "cada Service solo su propio Repository"
-  (ver 2.7), justificada porque los tres subtipos comparten tabla.
+### 3.4 Enums como STRING
 
-### 2.4 Enums
+Todos los enums persistidos usan `@Enumerated(EnumType.STRING)`, nunca ordinal, para que reordenar o añadir valores no corrompa los datos. Una prueba de arquitectura lo exige.
 
-Todos los campos `@Enumerated` usan `EnumType.STRING`. Nunca `ORDINAL`.
-Agregar un valor al enum o reordenarlo no corrompe datos existentes.
+### 3.5 Eliminación lógica
 
-### 2.5 Eliminacion logica
+Las entidades eliminables tienen el campo `activo`: `Proceso`, `Usuario`, `RolProceso`, `ProcesoCompartido`, `Pool`, `Lane`, `NodoFlujo`, `Arco`, `Mensaje` y `Correlacion`. Eliminar significa poner `activo = false`; no se borran filas. Hay dos mecanismos:
 
-`Proceso` y `RolProceso` usan `boolean activo` desde el inicio del proyecto.
-El mismo patron se extendio a todas las entidades de modelado: `Pool`,
-`Lane`, `Actividad`, `Gateway`, `EventoMensaje`, `Arco` y `Mensaje` tambien
-tienen `boolean activo` con filtrado explicito en cada query/servicio.
-Nunca se hace `DELETE` fisico sobre ninguna de estas entidades.
+- `Pool`, `Lane` y `Correlacion` usan `@SQLDelete` (convierte el `DELETE` en un `UPDATE ... SET activo = false`) y `@SQLRestriction("activo = true")` (oculta las filas inactivas).
+- El resto filtra de forma explícita en los repositorios (métodos con `ActivoTrue` o predicados en la consulta) y los servicios cambian el campo.
 
-Se evaluo adoptar `@SQLDelete`/`@Where` (soft delete declarativo de
-Hibernate) y se descarto a proposito: cambiaria el filtrado de `activo` de
-explicito (visible en cada query, igual que el filtrado por `empresaId`) a
-implicito y global, lo que es mas dificil de auditar. La decision esta
-documentada en `EntidadEmpresa.java`.
+Al eliminar una actividad, gateway o evento se desactivan también los arcos conectados. Eliminar un pool lo orquesta `PoolOrquestadorService`: elimina sus lanes en cascada y se rechaza si alguna tiene elementos activos. El nombre de un proceso o de un rol solo es único entre los activos (índices parciales de PostgreSQL en `V3` más validación en el servicio), así que se puede reutilizar el de uno dado de baja.
 
-### 2.6 Seguridad
+### 3.6 ModelMapper en la capa de servicio
 
-- Autenticacion stateless via JWT (Bearer token).
-- Tres roles de acceso: `ADMINISTRADOR`, `EDITOR`, `SOLO_LECTURA`.
-- `ApiPrincipal` encapsula la identidad del usuario autenticado y el
-  `empresaId` del tenant.
-- Errores de autenticacion y autorizacion responden con `ProblemDetail`
-  (RFC 9457).
+Los métodos de consulta y de comando de cada servicio devuelven DTO de respuesta; el controller solo traduce HTTP. El mapeo entidad a DTO usa `ModelMapper` (registrado en `ModelMapperConfig`) dentro de los `Impl`, con la transacción aún abierta, de modo que las relaciones `LAZY` se resuelven sin `LazyInitializationException` (`spring.jpa.open-in-view=false`). Los DTO que necesitan composición propia se construyen a mano: `LoginResponse`, `ProcesoDetalleResponse`, `ProcesoDiagramaResponse` y `ProcesoCompartidoDetalleResponse`. Cada servicio expone además métodos que trabajan con la entidad (para que otros servicios compongan reglas de negocio) y métodos que trabajan con DTO (para el controller).
 
-### 2.7 Mapeo entidad-DTO con ModelMapper
+### 3.7 Orquestadores y eventos de dominio
 
-- `config/ModelMapperConfig.java` registra un bean `ModelMapper` con
-  `AbstractConverter` explicitos solo para los DTOs que tienen campos
-  derivados de una relacion (p. ej. `pool.getProceso().getId()` ->
-  `procesoId`). Los DTOs que solo copian campos con el mismo nombre no
-  tienen converter: ModelMapper los resuelve por coincidencia automatica.
-- **El mapeo ocurre en los controllers**, no en los services, y es una
-  decision deliberada: los services ya se llaman entre si con la entidad
-  real (no con el DTO) para validar reglas de negocio cruzadas; mover el
-  mapeo a la capa de servicio rompia esa composicion.
-- Se probo eliminar los converters "triviales" confiando por completo en el
-  mapeo automatico por nombre: rompio 24 tests, porque los DTO de respuesta
-  son Java records (sin setters) y ModelMapper 3.2.0 no los resuelve solo
-  por nombre cuando no hay un setter que rellenar. Por eso los converters
-  explicitos se mantienen para esos casos.
-- Las 20 relaciones `@ManyToOne`/`@OneToOne` del proyecto son
-  `FetchType.LAZY` (ver `EntidadEmpresa.java` para el detalle). Como el
-  mapeo sigue ocurriendo en el controller — fuera de la transaccion, con
-  `spring.jpa.open-in-view=false` — acceder a una relacion no inicializada
-  ahi lanzaria `LazyInitializationException`. La solucion no fue mover el
-  mapeo a la capa de servicio (evaluado y descartado, ver arriba), sino
-  declarar `@EntityGraph(attributePaths = {...})` en el metodo del
-  repositorio que alimenta cada lectura que necesita esa relacion — p. ej.
-  `LaneRepository.findByIdAndEmpresaId` carga `rolProceso` porque
-  `LaneResponse` necesita su nombre. Cada repositorio con un
-  `@EntityGraph` documenta en un comentario que relacion necesita y por
-  que. Los accesos que solo leen el id de la relacion (la mayoria) no
-  necesitan `@EntityGraph`: un proxy LAZY sin inicializar sigue
-  respondiendo a `getId()` sin lanzar excepcion.
+Para evitar dependencias circulares entre servicios, hay dos mecanismos:
 
-### 2.8 Orquestadores transaccionales y eventos de dominio
+**Orquestadores** (transaccionales, dependen de varios servicios y ninguno depende de ellos):
 
-Varios casos de uso necesitan coordinar dos o mas servicios en una sola
-operacion atomica (p. ej. crear un proceso y su pool inicial). Hacer esa
-coordinacion llamando a dos servicios por separado desde el controller deja
-cada llamada en su propia transaccion: si la segunda falla, la primera ya
-quedo persistida. La solucion son 4 servicios `@Service` nuevos, cada uno
-con un metodo `@Transactional` que envuelve la secuencia completa:
+| Orquestador | Caso de uso |
+|---|---|
+| `EmpresaOrquestadorService` | Registrar una empresa junto con su administrador inicial |
+| `ProcesoOrquestadorService` | Crear un proceso junto con su pool inicial de tipo EMPRESA |
+| `PoolOrquestadorService` | Eliminar un pool con sus lanes en cascada |
+| `LaneOrquestadorService` | Crear o editar una lane resolviendo su rol de proceso |
+| `CorrelacionOrquestadorService` | Definir o eliminar la correlación y sincronizar la clave del mensaje |
 
-| Orquestador | Casos de uso | Depende de |
-|---|---|---|
-| `EmpresaOrquestadorService` | Registrar empresa + administrador inicial (HU-01) | `EmpresaService`, `UsuarioService` |
-| `ProcesoOrquestadorService` | Crear proceso + pool inicial (HU-04) | `ProcesoService`, `PoolService` |
-| `CorrelacionOrquestadorService` | Definir/eliminar correlacion + actualizar el mensaje (HU-28) | `MensajeService`, `CorrelacionService` |
-| `PoolOrquestadorService` | Verificar + borrar lanes + eliminar el pool (HU-21) | `PoolService`, `LaneService` |
+**Eventos de dominio** (síncronos, dentro de la misma transacción; si el listener lanza una excepción, el cambio se aborta antes de guardar):
 
-Como son clases nuevas que dependen de los services existentes (y ningun
-service existente depende de ellas), no reintroducen los ciclos que
-`SeparacionRepositoriosTest` prohibe.
-
-Un caso distinto: hay reglas de negocio (validar el modelo BPMN antes de
-publicar, o rechazar marcar un pool con lanes como caja negra) que deben
-cumplirse aunque el Service se llame directamente, sin pasar por un
-orquestador. Para esos dos casos se usan **eventos de dominio sincronos**
-(`ApplicationEventPublisher` + `@EventListener`):
-
-- `ProcesoService.cambiarEstado` publica `ProcesoPublicacionEvent` antes de
-  guardar la transicion a `PUBLICADO`; `ValidacionModeloService` lo escucha.
-- `PoolService.editar` publica `PoolMarcadoCajaNegraEvent` antes de guardar
-  `cajaNegra = true`; `LaneService` lo escucha.
-
-Un evento no es una dependencia de compilacion (quien publica no conoce a
-quien escucha), y `@EventListener` de Spring se ejecuta de forma sincrona,
-dentro de la misma transaccion del publicador: si el listener lanza una
-excepcion, aborta la operacion antes de guardar nada.
-
-Resultado: **0 usos de `@Lazy` en todo el proyecto**. `SeparacionRepositoriosTest`
-tiene una regla `beFreeOfCycles()` que falla el build si se reintroduce un
-ciclo entre servicios.
-
----
-
-## 3. Suite de tests
-
-### 3.1 Inventario
-
-| Tipo | Clases | Tests | Que valida |
+| Evento | Lo publica | Lo escucha | Efecto |
 |---|---|---|---|
-| Contexto | 1 | 1 | Spring Boot arranca correctamente |
-| Arquitectura (ArchUnit) | 7 | 35 | Empaquetado, multi-tenencia, herencia JPA, seguridad, separacion de repositorios y 0 ciclos entre servicios |
-| Controllers (gestion) | 8 | 53 | Endpoints REST, validaciones, permisos |
-| Controllers (modelado) | 8 | 65 | Endpoints REST de modelado BPMN |
-| Servicios (gestion) | 10 | 52 | Logica de negocio de gestion, incluye los orquestadores |
-| Servicios (modelado) | 12 | 129 | Logica de negocio de modelado, incluye los orquestadores y los `@EventListener` |
-| Seguridad e integracion | 4 | 92 | JWT, aislamiento de tenants, roles |
-| Transaccionalidad (integracion, H2 real) | 7 | 8 | Rollback real de cada orquestador, cumplimiento de reglas de negocio llamando al Service directamente, y lectura de relaciones LAZY fuera de la transaccion (ProcesoCompartido, Arco) |
-| **Total** | **57** | **435** | |
+| `ProcesoPublicacionEvent` | `ProcesoService.cambiarEstado`, al pasar a PUBLICADO | `ValidacionModeloService` | Impide publicar un modelo incoherente |
+| `PoolMarcadoCajaNegraEvent` | `PoolService.editar` | `LaneService` | Impide marcar caja negra un pool con lanes |
+| `PoolParticipanteModificadoEvent` | `PoolService.editar` | `MensajeService` | Impide cambiar tipo de participante o caja negra de un pool que es destino externo de mensajes activos |
 
-### 3.2 Ejecucion local
+### 3.8 ApiPrincipal
 
-```bash
-# Todos los tests
-./mvnw test
+`ApiPrincipal` es un `record(usuarioId, empresaId, rol, email)` que representa al usuario autenticado. El filtro JWT lo coloca en el contexto de seguridad y los controllers lo reciben con `@AuthenticationPrincipal`. Es la única fuente del tenant y del rol en cada petición.
 
-# Solo tests de arquitectura
-./mvnw test -Dtest="com.facimus.procesos.arquitectura.**"
+### 3.9 Validación de coherencia del modelo por API
 
-# Solo tests de un servicio especifico
-./mvnw test -Dtest="ArcoServiceTest"
-```
+`ValidacionModeloService` reúne todas las advertencias de un proceso sin lanzar excepción:
 
-El reporte de cobertura JaCoCo se genera en `target/site/jacoco/index.html`
-despues de correr los tests.
+- `GET /procesos/{id}/validacion` devuelve `{ valido, advertencias[] }` para que el usuario vea el estado mientras modela.
+- Publicar usa la misma lista y responde 409 si no está vacía.
 
-### 3.3 Agregar tests nuevos
+Reglas comprobadas:
 
-- Tests de arquitectura van en `src/test/java/com/facimus/procesos/arquitectura/`.
-- Tests de controllers usan `@WebMvcTest` con mocks de servicios.
-- Tests unitarios de servicio van en el paquete espejo del servicio bajo
-  `src/test/`. Ejemplo: servicio en `modelado.service.ArcoService` → test en
-  `modelado.service.ArcoServiceTest`.
-- Usar `@ExtendWith(MockitoExtension.class)` con `@Mock` e `@InjectMocks`.
-  No usar `@SpringBootTest` para tests unitarios — solo para tests de
-  integracion que necesiten el contexto completo.
+- Exactamente un pool de tipo EMPRESA, y que no sea caja negra.
+- Un pool de caja negra no contiene lanes.
+- Gateway divergente: al menos dos salidas; convergente (dos o más entradas): una salida.
+- Arcos que salen de un gateway exclusivo o inclusivo con más de una salida: todos con condición.
+- Message Catch de inicio sin arcos entrantes; Message Catch sin mensaje vinculado ni origen externo; Message Catch intermedio con clave de correlación.
+- Mensajes: Message Throw asociado, receptor (Message Catch o destino externo), clave y correlación definidas, claves coherentes entre mensaje, Throw y Catch, sin mensajes ambiguos (mismo nombre y clave), y destinos externos hacia un pool SISTEMA_EXTERNO de caja negra con el destino documentado.
 
----
+Además, cada operación de modelado aplica sus reglas al instante (409 o 400): nombres de nodo únicos por proceso, arcos solo dentro del mismo pool y sin lazos a sí mismos ni duplicados, condición solo en arcos de gateways exclusivos o inclusivos, no modelar en procesos inactivos, no mover un nodo con arcos a otro pool, mensajes entre pools distintos del mismo proceso, entre otras.
 
-## 4. CI/CD con GitHub Actions
+### 3.10 Consultas JPQL
 
-### 4.1 Pipeline actual (`.github/workflows/ci.yml`)
+Las consultas se derivan por nombre de método (`findByIdAndEmpresaId`, `...ActivoTrue`) y hay cuatro `@Query` JPQL para lo que no se expresa así: la búsqueda paginada de procesos con filtros opcionales (`ProcesoRepository`), el uso de roles por proceso (`LaneRepository`), mensajes por nodo (`MensajeRepository`) y la búsqueda de nodos por nombre sin distinguir mayúsculas (`NodoFlujoRepository`). Las lecturas que navegan relaciones declaran `@EntityGraph`.
 
-```
-Push o PR a main/develop
-│
-├── Job 1: Build & Test (ubuntu + windows, en paralelo)
-│   ├── Compilar con Maven
-│   ├── Ejecutar los 435 tests
-│   ├── Generar reporte de tests
-│   ├── Subir reporte JaCoCo como artefacto
-│   └── Empaquetar JAR
-│
-├── Job 2: Architecture Guard (despues de Job 1)
-│   ├── Ejecutar los 35 tests de ArchUnit
-│   └── Reporte separado de reglas de arquitectura
-│
-├── Job 3: Docker Build (despues de Jobs 1 y 2)
-│   ├── Construir imagen Docker
-│   └── Levantar contenedor y verificar que arranca
-│
-└── Job 4: SonarCloud (despues de Job 1, en push y en pull_request)
-    ├── Analisis de calidad y cobertura (`mvn verify sonar:sonar`)
-    └── Espera el resultado del quality gate (`-Dsonar.qualitygate.wait=true`):
-        el job falla si el gate no se cumple
-```
+### 3.11 Historial de cambios
 
-El job de SonarCloud corre tanto en `push` como en `pull_request`. Los PRs
-abiertos desde un fork se omiten (GitHub no les entrega los secrets), por lo
-que el analisis aplica a PRs de ramas del propio repositorio.
+`HistorialCambioService` y `AuditoriaModeladoService` registran en `HistorialCambio` (proceso, autor, fecha y descripción) los cambios del proceso, de sus roles, de lo que se comparte y del diagrama. Se consulta con `GET /procesos/{id}/historial` y dentro del detalle del proceso.
 
-El quality gate es el predeterminado de SonarCloud ("Sonar way"), que evalua
-solo el **codigo nuevo** del PR: cobertura >= 80%, duplicacion <= 3%, ratings
-de fiabilidad/seguridad/mantenibilidad en A y 100% de security hotspots
-revisados. Esto es distinto del minimo de JaCoCo configurado en el `pom.xml`
-(50% de lineas sobre todo el proyecto, verificado en `mvn verify`).
+### 3.12 Procesos compartidos
 
-### 4.2 Que bloquea un merge
+Un administrador comparte un proceso con otra empresa y esta lo ve en solo lectura (`/procesos-compartidos`). La empresa invitada no puede modificar el diagrama; el propietario puede revocar el acceso. No se puede compartir con la propia empresa.
 
-Que un check bloquee el merge depende de que `main` tenga branch protection
-con ese check marcado como obligatorio (Settings > Branches). Con la regla
-activa, un PR no se puede mergear si:
-- Falla cualquier test unitario o de integracion.
-- Se viola alguna regla de arquitectura (ArchUnit).
-- La imagen Docker no se construye correctamente.
-- No se cumple el quality gate de SonarCloud (p. ej. cobertura de codigo
-  nuevo por debajo del 80%): el job `SonarQube Analysis` falla.
+## 4. Seguridad (nivel backend)
 
-Checks recomendados como obligatorios: `Build & Test (ubuntu-latest)`,
-`Build & Test (windows-latest)`, `Architecture Rules`, `Docker Image` y
-`SonarQube Analysis`. Sin branch protection, estos checks informan pero no
-impiden el merge.
+- **JWT stateless**: `JwtAuthenticationFilter` lee `Authorization: Bearer <token>`, valida firma y expiración con `JwtService` y vuelve a cargar al usuario de la base en cada petición; si el usuario fue desactivado o ya no existe, la petición queda sin autenticar (401). El token lleva `usuarioId`, `empresaId`, `rol` y el correo como subject. Duración por defecto: 1800 segundos (`JWT_EXPIRATION_SECONDS`).
+- **Secreto**: en `prod`, `JwtService` no arranca con un `JWT_SECRET` vacío o menor de 32 caracteres. Fuera de `prod`, un secreto vacío genera una clave aleatoria por arranque.
+- **Sesión y CSRF**: sin sesión (`STATELESS`); el CSRF queda exento solo para `/api/v1/**` y `/h2-console/**`.
+- **CORS**: `CorsConfig` permite los orígenes de `CORS_ALLOWED_ORIGINS`, los métodos GET, POST, PUT, PATCH y DELETE y las cabeceras `Authorization`, `Content-Type` y `Accept`.
+- **Login**: el mismo mensaje y un tiempo de respuesta equivalente se dan si el correo no existe, está inactivo o la contraseña es incorrecta (siempre se ejecuta una comparación BCrypt). Los correos son únicos en todo el sistema, sin distinguir mayúsculas.
+- **Roles de acceso** (`SecurityConfig`):
+  - Públicas: `POST /auth/login`, `POST /empresas`, `POST /usuarios/invitaciones/*/aceptar`, además de Swagger, `/v3/api-docs`, `/h2-console` y `/error` (en `prod` Swagger y la consola H2 están apagados).
+  - `GET` en `/api/v1/**`: cualquier usuario autenticado, salvo `/usuarios/**` y `/permisos-estructura` (solo ADMINISTRADOR). `GET /permisos-estructura/mio` es para cualquier autenticado.
+  - `/usuarios/**`, `/permisos-estructura/**` (salvo `mio`), `/roles/**` en escritura, compartir y revocar procesos: ADMINISTRADOR.
+  - `DELETE` de procesos, actividades, eventos de mensaje, arcos, gateways y mensajes: ADMINISTRADOR.
+  - Resto de escrituras: ADMINISTRADOR o EDITOR. SOLO_LECTURA nunca escribe.
+- **Permisos de estructura**: crear, editar y eliminar pools y lanes los decide `PermisoEstructuraService` por empresa y por rol (seis banderas: `crearPool`, `editarPool`, `eliminarPool`, `crearLane`, `editarLane`, `eliminarLane`). El ADMINISTRADOR siempre tiene todas y no se puede reducir; por defecto el EDITOR puede crear y editar pero no eliminar; SOLO_LECTURA no puede recibir ninguna. El cliente consulta los suyos con `GET /permisos-estructura/mio`. Sin permiso, la respuesta es 403.
+- **Último administrador**: no se puede degradar ni desactivar al último administrador activo de una empresa (409).
+- **Invitaciones**: token UUID de un solo uso con vigencia de 48 horas; no se puede invitar a un correo ya registrado ni duplicar una invitación pendiente.
+- **Respuestas de error seguras**: sin trazas ni mensajes internos (`server.error.include-*=never`) y sin exponer SQL ni nombres de restricciones.
 
----
+## 5. Errores
 
-## 5. Despliegue con Docker
+Todos los errores usan `ProblemDetail` (RFC 7807) con `title`, `status`, `detail` e `instance`. `ApiExceptionHandler` los produce; para 401 y 403 en la cadena de seguridad lo hacen `JwtAuthEntryPoint` y `JwtAccessDeniedHandler`.
 
-### 5.1 Imagen Docker
-
-El `Dockerfile` usa build multi-stage:
-
-```
-Stage 1 — build (maven:3.9-eclipse-temurin-21)
-  1. Copia pom.xml y descarga dependencias (capa cacheada)
-  2. Copia codigo fuente
-  3. Ejecuta mvn package (compila + corre tests)
-  4. Si algun test falla, el build se detiene aqui
-
-Stage 2 — runtime (eclipse-temurin:21-jre)
-  1. Copia solo el JAR del stage anterior
-  2. Corre como usuario no-root (appuser, uid 1001)
-  3. Expone puerto 8080
-```
-
-**Construir la imagen localmente:**
-
-```bash
-docker build -t facimus/procesos-back .
-```
-
-### 5.2 Perfiles de Spring
-
-| Perfil | BD | DatosDemoInitializer | Uso |
-|---|---|---|---|
-| (default) | H2 en archivo `./data/` | Activo | Desarrollo local |
-| `prod` | PostgreSQL externo | Inactivo (`@Profile("!prod")`) | Contenedores Docker / VMs |
-
-El perfil se activa con la variable de entorno `SPRING_PROFILES_ACTIVE=prod`.
-
-### 5.3 Variables de entorno del perfil prod
-
-| Variable | Default | Descripcion |
+| Código | Título | Cuándo |
 |---|---|---|
-| `SPRING_PROFILES_ACTIVE` | (ninguno) | Debe ser `prod` para activar PostgreSQL |
-| `DB_HOST` | `localhost` | IP o hostname de PostgreSQL |
-| `DB_PORT` | `5432` | Puerto de PostgreSQL |
-| `DB_NAME` | `procesos` | Nombre de la base de datos |
-| `DB_USER` | `procesos` | Usuario de la base de datos |
-| `DB_PASSWORD` | (vacio) | Contrasena de la base de datos |
-| `JWT_SECRET` | (requerido) | Clave para firmar tokens JWT |
+| 400 | Solicitud invalida | `SolicitudInvalidaException`: petición con campos incompatibles entre sí (p. ej. correlación, destino externo o políticas en un mensaje sin Message Throw) |
+| 400 | Validación fallida | Falla Bean Validation; el detalle lista `campo: mensaje` |
+| 400 | Parámetro inválido | Tipo de parámetro incorrecto o `pagina`/`tamano` fuera de rango |
+| 400 | JSON inválido | Cuerpo ausente o malformado |
+| 401 | No autenticado | Token ausente, inválido o expirado; credenciales incorrectas en el login |
+| 403 | Sin permisos | Rol sin acceso al recurso o sin permiso de estructura |
+| 404 | Recurso no encontrado | `RecursoNoEncontradoException`: no existe o pertenece a otra empresa |
+| 409 | Regla de negocio violada | `ReglaNegocioException`: nombre duplicado, publicar un modelo incoherente, borrar algo en uso, último administrador, etc. |
+| 409 | Conflicto de datos | `DataIntegrityViolationException`; el mensaje es genérico y el detalle va solo al log |
+| 500 | Error interno | Cualquier excepción no prevista; el detalle va solo al log |
 
-### 5.4 Topologia de despliegue
+Las excepciones de dominio (`RecursoNoEncontradoException`, `ReglaNegocioException`, `SolicitudInvalidaException`) viven en `common/`. Los servicios no usan `ResponseStatusException`: la traducción a HTTP es responsabilidad de `ApiExceptionHandler`.
 
-Tres servicios en contenedores Docker, cada uno en su propia VM.
+## 6. Paginación
 
-```
-VM 1 — Base de datos          VM 2 — Backend              VM 3 — Frontend
-┌──────────────────┐          ┌──────────────────┐        ┌──────────────────┐
-│  PostgreSQL 17   │          │  procesos-back   │        │  Angular (nginx) │
-│  puerto 5432     │◄─────────│  puerto 8080     │◄───────│  puerto 80       │
-│                  │   JDBC   │                  │  HTTP  │                  │
-└──────────────────┘          └──────────────────┘        └──────────────────┘
-```
+Las listas paginadas (`GET /procesos`, `GET /roles/consulta`) usan los parámetros `pagina` (desde 0) y `tamano` (de 1 a 100; 10 por defecto) y devuelven `PageResponse<T>`:
 
-### 5.5 Comandos de despliegue por VM
-
-**VM 1 — Base de datos:**
-
-```bash
-docker run -d \
-  --name procesos-db \
-  --restart unless-stopped \
-  -p 5432:5432 \
-  -e POSTGRES_DB=procesos \
-  -e POSTGRES_USER=procesos \
-  -e POSTGRES_PASSWORD=<password-segura> \
-  -v pgdata:/var/lib/postgresql/data \
-  postgres:17
+```json
+{ "content": [], "page": 0, "size": 10, "totalElements": 0, "totalPages": 0 }
 ```
 
-**VM 2 — Backend:**
+Un valor fuera de rango responde 400. Los procesos se ordenan por fecha de modificación descendente y los roles por nombre. El resto de listados (usuarios, pools, lanes, nodos, arcos, mensajes, etc.) no se pagina.
 
-```bash
-docker run -d \
-  --name procesos-back \
-  --restart unless-stopped \
-  -p 8080:8080 \
-  -e SPRING_PROFILES_ACTIVE=prod \
-  -e DB_HOST=<ip-vm-1> \
-  -e DB_PORT=5432 \
-  -e DB_NAME=procesos \
-  -e DB_USER=procesos \
-  -e DB_PASSWORD=<password-segura> \
-  -e JWT_SECRET=<clave-segura> \
-  facimus/procesos-back
-```
+## 7. Base de datos, Flyway y perfiles
 
-**VM 3 — Frontend:**
+| Perfil | Base | Esquema |
+|---|---|---|
+| por defecto | H2 en archivo `./data/procesos` | Hibernate `ddl-auto=update`, Flyway apagado |
+| `test` | H2 en memoria (`testdb`) | Hibernate `create-drop`, Flyway apagado |
+| `prod` | PostgreSQL (`DB_*`) | Flyway crea el esquema; Hibernate `validate` |
 
-```bash
-docker run -d \
-  --name procesos-front \
-  --restart unless-stopped \
-  -p 80:80 \
-  facimus/procesos-front
-```
+Migraciones (`src/main/resources/db/migration/`):
 
-### 5.6 Verificacion del despliegue
+| Archivo | Contenido |
+|---|---|
+| `common/V1__esquema_inicial.sql` | Esquema completo |
+| `common/V2__indices_por_empresa.sql` | Índices por `empresa_id` |
+| `postgresql/V3__unicidad_entre_activos.sql` | Índices únicos parciales (nombre de proceso y de rol por empresa, solo activos); propios de PostgreSQL |
+| `common/V5__eventos_mensaje_actividades.sql` | Tabla `evento_mensaje_actividades` |
 
-```bash
-# Verificar que la BD responde
-pg_isready -h <ip-vm-1> -p 5432
+En `prod`, Flyway carga `classpath:db/migration/common` y `classpath:db/migration/postgresql`, con `baseline-on-migrate=false`. `MigracionesTest` aplica las migraciones comunes sobre H2 en modo PostgreSQL y deja que Hibernate valide el esquema contra las entidades: si una entidad cambia sin migración, la prueba falla. Todo cambio de entidad que toque el esquema debe traer su migración nueva (nunca se edita una ya aplicada).
 
-# Verificar que el backend responde
-curl -s http://<ip-vm-2>:8080/swagger-ui/index.html | head -1
+## 8. Datos de ejemplo
 
-# Verificar login
-curl -s -X POST http://<ip-vm-2>:8080/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@demo.com","password":"admin123"}'
-```
+`DatosDemoInitializer` (`@Profile("default")`) carga, solo si no hay ninguna empresa, dos empresas, cuatro usuarios (uno por rol de acceso en la primera y un administrador en la segunda), roles de proceso y procesos de ejemplo. Credenciales y detalle en el [README](../README.md). No corre en `prod` ni en `test`.
 
----
+## 9. Docker y Compose
 
-## 6. Guia para contribuir
+- `Dockerfile` multi-etapa: `maven:3.9-eclipse-temurin-21` compila con `mvn -B clean package` (que ejecuta las pruebas) y `eclipse-temurin:21-jre` ejecuta el JAR con un usuario sin privilegios (`appuser`, UID 1001). Perfil `prod` por defecto, puerto 8080.
+- `compose.yaml`: servicio `db` (PostgreSQL 16, con healthcheck y volumen `pgdata`) y servicio `backend` (perfil `prod`, espera a que la base esté sana). `DB_PASSWORD` y `JWT_SECRET` son obligatorias.
+- `.env.example` documenta las variables; `.env` no se versiona.
 
-### 6.1 Flujo de trabajo Git
+## 10. CI/CD
 
-1. Crear rama desde `main`: `feature/<descripcion>`, `fix/<descripcion>`.
-2. Hacer commits modulares (un archivo por commit).
-3. Abrir PR contra `main`.
-4. Esperar que los 4 jobs del CI pasen en verde.
-5. Merge con `--no-ff` para preservar el historial de la rama.
+Workflow `.github/workflows/ci.yml` (en `push` a `main` y en `pull_request`):
 
-### 6.2 Agregar una entidad nueva
+1. `build-and-test`: `mvn -B clean verify` en Ubuntu y Windows (JDK 21 Temurin), informe de pruebas, artefacto JaCoCo y verificación del JAR.
+2. `architecture-guard`: ejecuta solo las pruebas de `com.facimus.procesos.arquitectura`; depende del job anterior.
+3. `docker-build`: construye la imagen y la ejecuta brevemente; depende de los dos anteriores.
+4. `sonarqube`: `mvn verify sonar:sonar` con `-Dsonar.qualitygate.wait=true` contra SonarCloud (`sonar.projectKey=AndresContreras1_Backend-DW-BPMN`). Usa los secretos `SONAR_TOKEN` y `SONAR_HOST_URL`. Se exceptúan de cobertura y análisis `**/dto/**`, `**/config/**` y `*Application.java`. No corre en pull requests de forks.
 
-1. Crear la clase en el paquete `model/` del modulo correspondiente.
-2. Si pertenece a una empresa, extender `EntidadEmpresa`. Si no lo haces,
-   el test `MultitenenciaTest` fallara en CI.
-3. Si tiene campos enum, mapearlos con `@Enumerated(EnumType.STRING)`. Si
-   usas `ORDINAL`, el test `HerenciaJpaTest` fallara.
-4. Crear el repositorio extendiendo `RepositorioTenant<T>`. Si no lo haces,
-   el test `RepositorioTenantTest` fallara.
-5. Crear el servicio en `service/`. Si lo pones en otro paquete, el test
-   `EmpaquetadoTest` fallara.
-6. Si necesita controlador, crearlo en `controller/`. Que solo dependa de
-   servicios, no de repositorios directamente.
-7. Agregar tests unitarios para el servicio y controller nuevos.
+El repositorio no tiene un job de despliegue: el CI valida y construye, no publica la imagen.
 
-### 6.3 Cosas que no se deben hacer
+## 11. Pruebas
 
-- **No crear queries sin filtro `empresaId`** en ningun repositorio (excepto
-  `EmpresaRepository`). Un tenant veria datos de otro.
-- **No usar `@Enumerated(EnumType.ORDINAL)`**. Reordenar el enum corrompe
-  datos existentes.
-- **No acceder a repositorios desde controllers**. Toda la logica pasa por
-  la capa de servicio.
-- **No hacer DELETE fisico** sobre `Proceso` ni `RolProceso`. Usar
-  `setActivo(false)`.
-- **No hacer `git push --force`** a `main`.
-- **No saltarse los hooks** con `--no-verify`.
+`./mvnw verify` ejecuta **724 pruebas** (85 clases, 0 fallos). El inventario por paquete:
+
+| Paquete de pruebas | Pruebas | Qué cubre |
+|---|---|---|
+| `arquitectura` | 45 | Reglas ArchUnit (ver abajo) |
+| `gestion.service` | 119 | Servicios de gestión con Mockito, incluida la verificación del mapeo a DTO |
+| `gestion.controller` | 71 | Controllers con `@WebMvcTest`: códigos HTTP, validación de requests, catálogo de errores |
+| `gestion.repository` | 11 | `@DataJpaTest` de consultas de procesos, roles, historial, etc. |
+| `modelado.service` | 252 | Servicios de modelado: reglas de pools, lanes, nodos, arcos, mensajes, correlaciones y validación del modelo |
+| `modelado.controller` | 76 | Controllers de modelado |
+| `modelado.repository` | 4 | Consultas de modelado |
+| `modelado` (raíz) | 13 | Integración end-to-end de reglas de modelado |
+| `security` | 110 | Autorización por rol, aislamiento entre empresas, permisos de estructura, JWT, respuestas seguras |
+| `transaccionalidad` | 16 | Atomicidad de operaciones compuestas (registro de empresa, creación de proceso, eliminar pool, correlación), invariantes y proxies lazy |
+| `common.api` | 1 | `ApiExceptionHandler` |
+| `config` | 4 | `DatosDemoInitializer` |
+| `migraciones` | 1 | Flyway contra las entidades |
+| raíz | 1 | Carga del contexto de Spring |
+
+Tipos: 37 clases con Mockito, 18 con `@WebMvcTest`, 17 con `@SpringBootTest`, 3 con `@DataJpaTest`. Los métodos de prueba siguen un nombre descriptivo de la forma `Sujeto_accion_resultado`.
+
+**Reglas ArchUnit** (`arquitectura/`): capas controller/service/repository respetadas; los controllers no usan repositorios; los servicios no dependen de controllers ni de la capa web; los repositorios y las entidades no dependen de capas superiores; `security` no depende de repositorios; ningún servicio inyecta el repositorio de otro dominio (salvo `NodoFlujoRepository`) y no hay ciclos entre servicios; servicios como interfaz más `Impl` con sufijos de nombre correctos; DTO como `record` en `dto`; las entidades no salen por la API; todas las entidades salvo `Empresa` extienden `EntidadEmpresa` con `empresa_id` no actualizable; todo repositorio tenant extiende `RepositorioTenant`; los servicios consultan con `empresaId`; sin `HttpSession`; sin `@Transactional` en controllers; sin salida estándar; sin inyección por campo; `NodoFlujo` con `SINGLE_TABLE` y subtipos que lo extienden; enums como `STRING`.
+
+**Cobertura (JaCoCo `check`, en `verify`)**: paquetes `*.service` con mínimo 70 % de líneas y 60 % de ramas; proyecto con mínimo 50 % de líneas; excluidos `dto`, `config` y `*Application`. Con el estado actual, todos los umbrales se cumplen.
+
+Otros recursos: `postman/` (dos colecciones: la API completa y un flujo por historias de usuario) y `jmeter/` (planes de login, CRUD de procesos, CRUD de roles y modelado BPMN) para pruebas manuales y de carga; no forman parte de `verify`.
+
+## 12. Guía para contribuir
+
+**Flujo de ramas**
+
+- `main` es la rama estable y no se trabaja directamente sobre ella.
+- Cada cambio va en su propia rama: `feature/<tema>` para funcionalidad nueva y `fix/<tema>` para correcciones.
+- Un cambio por pull request, con destino `main`. El PR debe pasar los cuatro jobs del CI.
+
+**Commits**: prefijo convencional y descripción en español: `feat:`, `fix:`, `docs:`, `refactor:` (por ejemplo `docs: actualizar el README y la guía técnica`). Un commit debe contener un cambio coherente.
+
+**Antes de abrir el PR**
+
+1. `./mvnw verify` en verde (pruebas, ArchUnit y JaCoCo).
+2. Si cambió una entidad, añadir la migración Flyway correspondiente.
+3. Cada servicio nuevo es interfaz más `Impl`, devuelve DTO mediante ModelMapper y filtra por `empresaId`.
+4. Cada endpoint nuevo lleva sus anotaciones OpenAPI, su regla en `SecurityConfig` si no cae en las generales y pruebas de controller y de servicio.
+5. Actualizar el README y esta guía si cambian endpoints, variables o decisiones.
+
+## 13. Lo que no se hace
+
+- No se ejecutan procesos: no hay motor BPMN, instancias, tareas ni envío real de mensajes o notificaciones.
+- No se importa ni se exporta XML BPMN.
+- No hay refresh tokens ni revocación de tokens: `POST /auth/logout` solo confirma; el token vale hasta que expira (aunque desactivar al usuario sí lo invalida, porque se revisa en cada petición).
+- No se envían correos (ni invitaciones ni notificaciones).
+- No se recupera ni se cambia la contraseña por API.
+- No se borran datos de forma física: todo es baja lógica.
+- No hay control de versiones del diagrama: solo un historial de cambios y el estado BORRADOR/PUBLICADO (un proceso publicado no vuelve a borrador).
+- No se despliega la imagen desde el CI.
+- No hay frontend en este repositorio.
+
+## 14. Limitaciones conocidas
+
+- **La invitación entrega el token en la respuesta y no envía correo.** Quien invita debe hacer llegar el enlace o el token al colaborador por su cuenta. El texto "por correo" de la descripción OpenAPI del endpoint no corresponde a un envío real.
+- **El contenido de los mensajes es texto libre.** El campo `contenido` de `Mensaje` y de `EventoMensaje` no se valida contra un esquema de datos; solo se comprueba que las claves de correlación coincidan.
+- **La comprobación del último administrador no es atómica.** Se cuenta a los administradores activos y luego se guarda el cambio sin bloqueo; dos peticiones simultáneas podrían dejar a una empresa sin administrador.
+- **El nombre único de proceso o rol depende de la validación del servicio en el perfil por defecto.** Los índices únicos parciales solo existen en PostgreSQL (`prod`); con H2 solo protege la comprobación previa del servicio, que tampoco es atómica ante peticiones simultáneas.
+- **Los correos de usuario son únicos globalmente**, no por empresa; una persona no puede pertenecer a dos empresas con el mismo correo.
+- **Las listas no paginadas** (usuarios, pools, lanes, nodos, arcos, mensajes) devuelven todo el conjunto; el diagrama completo se entrega en una sola respuesta.
+- **Sin límite de intentos de inicio de sesión**: no hay bloqueo ni control de frecuencia.
+- **Sin migración de la base H2 local**: el perfil por defecto usa `ddl-auto=update`; si cambia el modelo conviene borrar la carpeta `data/`.
+- **Falta la migración `V4`**: la numeración de Flyway salta de `V3` a `V5` (no hay migración con ese número); las migraciones existentes se aplican en orden sin problema.
