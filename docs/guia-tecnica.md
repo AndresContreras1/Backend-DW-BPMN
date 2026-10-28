@@ -221,7 +221,7 @@ El repositorio no tiene un job de despliegue: el CI valida y construye, no publi
 
 ## 11. Pruebas
 
-`./mvnw verify` ejecuta **724 pruebas** (85 clases, 0 fallos). El inventario por paquete:
+`./mvnw verify` ejecuta **726 pruebas** (85 clases, 0 fallos). El inventario por paquete:
 
 | Paquete de pruebas | Pruebas | Qué cubre |
 |---|---|---|
@@ -229,7 +229,7 @@ El repositorio no tiene un job de despliegue: el CI valida y construye, no publi
 | `gestion.service` | 119 | Servicios de gestión con Mockito, incluida la verificación del mapeo a DTO |
 | `gestion.controller` | 71 | Controllers con `@WebMvcTest`: códigos HTTP, validación de requests, catálogo de errores |
 | `gestion.repository` | 11 | `@DataJpaTest` de consultas de procesos, roles, historial, etc. |
-| `modelado.service` | 252 | Servicios de modelado: reglas de pools, lanes, nodos, arcos, mensajes, correlaciones y validación del modelo |
+| `modelado.service` | 254 | Servicios de modelado: reglas de pools, lanes, nodos, arcos, mensajes, correlaciones y validación del modelo |
 | `modelado.controller` | 76 | Controllers de modelado |
 | `modelado.repository` | 4 | Consultas de modelado |
 | `modelado` (raíz) | 13 | Integración end-to-end de reglas de modelado |

@@ -209,7 +209,7 @@ Colecciones de Postman en `postman/` y planes de JMeter en `jmeter/` (login, CRU
 ./mvnw verify
 ```
 
-Ejecuta 724 pruebas (unitarias con Mockito, de repositorio con `@DataJpaTest`, de controllers con MockMvc, de integración con seguridad real, de transaccionalidad, de migraciones y de arquitectura con ArchUnit) y después JaCoCo `check`. Umbrales del `pom.xml`:
+Ejecuta 726 pruebas (unitarias con Mockito, de repositorio con `@DataJpaTest`, de controllers con MockMvc, de integración con seguridad real, de transaccionalidad, de migraciones y de arquitectura con ArchUnit) y después JaCoCo `check`. Umbrales del `pom.xml`:
 
 - Paquetes `com.facimus.procesos.*.service`: cobertura de líneas mínima 70 % y de ramas 60 %.
 - Proyecto completo: cobertura de líneas mínima 50 %.
