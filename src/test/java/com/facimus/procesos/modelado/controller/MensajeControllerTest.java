@@ -146,4 +146,74 @@ class MensajeControllerTest {
         return MAPPER.map(m, MensajeResponse.class);
     }
 
+    @Test
+    @DisplayName("POST mensaje con campos de destino sin eventoThrowId responde 400 en vez de descartarlos")
+    void crear_con_campos_avanzados_sin_throw_retorna_400() throws Exception {
+        mockMvc.perform(post("/api/v1/procesos/10/mensajes")
+                .with(principal(RolAcceso.EDITOR))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"nombre":"Orden","contenido":"x","poolOrigenId":1,"poolDestinoId":2,
+                     "tipoDestinoExterno":"CORREO","destinoExterno":"ops@demo.com"}
+                    """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("eventoThrowId")));
+
+        mockMvc.perform(post("/api/v1/procesos/10/mensajes")
+                .with(principal(RolAcceso.EDITOR))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"nombre":"Orden","contenido":"x","poolOrigenId":1,"poolDestinoId":2,"claveCorrelacion":"k"}
+                    """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST mensaje con destinoExterno de mas de 200 caracteres responde 400")
+    void crear_con_destino_externo_largo_retorna_400() throws Exception {
+        String largo = "a".repeat(201);
+        mockMvc.perform(post("/api/v1/procesos/10/mensajes")
+                .with(principal(RolAcceso.EDITOR))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"nombre\":\"Orden\",\"contenido\":\"x\",\"poolOrigenId\":1,\"poolDestinoId\":2,"
+                        + "\"eventoThrowId\":5,\"tipoDestinoExterno\":\"CORREO\",\"destinoExterno\":\"" + largo + "\"}"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(put("/api/v1/mensajes/1")
+                .with(principal(RolAcceso.EDITOR))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"nombre\":\"Orden\",\"contenido\":\"x\",\"destinoExterno\":\"" + largo + "\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST mensaje con eventoThrowId y destino de 200 caracteres se acepta")
+    void crear_con_throw_y_destino_en_el_limite_retorna_201() throws Exception {
+        var m = crearMensaje(3L, "Orden");
+        given(mensajeService.crear(eq(1L), eq(10L), any(MensajeRequest.class))).willReturn(m);
+
+        mockMvc.perform(post("/api/v1/procesos/10/mensajes")
+                .with(principal(RolAcceso.EDITOR))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"nombre\":\"Orden\",\"contenido\":\"x\",\"poolOrigenId\":1,\"poolDestinoId\":2,"
+                        + "\"eventoThrowId\":5,\"tipoDestinoExterno\":\"CORREO\",\"destinoExterno\":\""
+                        + "a".repeat(200) + "\"}"))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("PUT mensaje sin Message Throw con campos avanzados: el 400 del service sale como ProblemDetail")
+    void editar_sin_throw_con_campos_avanzados_retorna_400_problemdetail() throws Exception {
+        given(mensajeService.editar(eq(1L), eq(1L), any(EditarMensajeRequest.class)))
+                .willThrow(new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.BAD_REQUEST, "requieren un Message Throw"));
+
+        mockMvc.perform(put("/api/v1/mensajes/1")
+                .with(principal(RolAcceso.EDITOR))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"nombre\":\"Orden\",\"contenido\":\"x\",\"claveCorrelacion\":\"k\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.detail").value("requieren un Message Throw"));
+    }
 }

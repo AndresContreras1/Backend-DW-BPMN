@@ -8,6 +8,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.facimus.procesos.common.ReglaNegocioException;
 import com.facimus.procesos.modelado.model.Correlacion;
 import com.facimus.procesos.modelado.model.Mensaje;
 
@@ -31,8 +32,10 @@ public class CorrelacionOrquestadorServiceImpl implements CorrelacionOrquestador
     @Override
     public Correlacion definir(Long empresaId, Long mensajeId, String criterio) {
         Mensaje mensaje = mensajeService.obtener(empresaId, mensajeId);
+        validarProcesoActivo(mensaje);
+        // Solo los mensajes activos cuentan para la ambiguedad: uno eliminado no debe bloquear la clave.
         List<Mensaje> mensajesDelProceso = mensajeService.listarTodosPorProceso(empresaId,
-                mensaje.getProceso().getId());
+                mensaje.getProceso().getId()).stream().filter(Mensaje::isActivo).toList();
         Correlacion correlacion = correlacionService.definir(mensaje, mensajesDelProceso, criterio);
         mensaje.setClaveCorrelacion(criterio);
         mensajeService.guardar(mensaje);
@@ -43,9 +46,16 @@ public class CorrelacionOrquestadorServiceImpl implements CorrelacionOrquestador
     @Override
     public void eliminar(Long empresaId, Long mensajeId) {
         Mensaje mensaje = mensajeService.obtener(empresaId, mensajeId);
+        validarProcesoActivo(mensaje);
         correlacionService.eliminar(empresaId, mensaje);
         mensaje.setClaveCorrelacion(null);
         mensajeService.guardar(mensaje);
+    }
+
+    private void validarProcesoActivo(Mensaje mensaje) {
+        if (!mensaje.getProceso().isActivo()) {
+            throw new ReglaNegocioException("No se permite modelar en un proceso inactivo.");
+        }
     }
 
     @Transactional

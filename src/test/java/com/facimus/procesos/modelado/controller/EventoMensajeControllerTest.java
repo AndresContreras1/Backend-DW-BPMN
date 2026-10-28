@@ -110,4 +110,42 @@ class EventoMensajeControllerTest {
         e.setActivo(true);
         return MAPPER.map(e, EventoMensajeResponse.class);
     }
+
+    @Test
+    void impactoEliminacion_retorna_200_con_advertencias() throws Exception {
+        given(service.consultarImpactoEliminacion(1L, 5L)).willReturn(
+                new com.facimus.procesos.modelado.controller.dto.ImpactoEliminacionResponse(true, true,
+                        List.of("El evento Orden esta vinculado a los mensajes: \"Orden\".")));
+
+        mockMvc.perform(get("/api/v1/eventos-mensaje/5/impacto-eliminacion")
+                .with(principal(RolAcceso.SOLO_LECTURA)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requiereConfirmacion").value(true))
+                .andExpect(jsonPath("$.advertencias[0]").value(org.hamcrest.Matchers.containsString("Orden")));
+    }
+
+    @Test
+    void impactoEliminacion_sin_sesion_retorna_401() throws Exception {
+        mockMvc.perform(get("/api/v1/eventos-mensaje/5/impacto-eliminacion"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void editar_con_laneId_y_actividadIds_los_entrega_al_service() throws Exception {
+        var evento = evento(5L, "Orden", TipoEventoMensaje.CATCH_INTERMEDIO);
+        given(service.editar(eq(1L), eq(5L), org.mockito.ArgumentMatchers.argThat(
+                (EventoMensajeRequest r) -> Long.valueOf(2L).equals(r.laneId())
+                        && List.of(7L, 8L).equals(r.actividadIds())))).willReturn(evento);
+
+        mockMvc.perform(put("/api/v1/eventos-mensaje/5")
+                .with(principal(RolAcceso.EDITOR))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"nombre":"Orden","tipoEvento":"CATCH_INTERMEDIO","contenido":"payload",
+                     "claveCorrelacion":"pedidoId","posicionX":1,"posicionY":2,"origenExterno":false,
+                     "laneId":2,"actividadIds":[7,8]}
+                    """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.actividadIds").isArray());
+    }
 }

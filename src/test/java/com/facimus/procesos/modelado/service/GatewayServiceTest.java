@@ -253,4 +253,141 @@ class GatewayServiceTest {
         assertEquals(TipoGateway.EXCLUSIVO, resultado.getTipoGateway());
     }
 
+    // ---- impacto ----
+
+    private Arco arcoActivo(Long id, boolean conCondicion) {
+        Arco arco = new Arco();
+        arco.setId(id);
+        arco.setActivo(true);
+        arco.setCondicion(conCondicion ? "x > " + id : null);
+        return arco;
+    }
+
+    @Test
+    void impacto_de_romper_una_convergencia_avisa_de_las_entradas_y_la_salida() {
+        when(nodoFlujoService.buscar(1L, 1L)).thenReturn(Optional.of(gateway));
+        when(arcoService.listarPorDestino(1L, 1L)).thenReturn(List.of(arcoActivo(1L, false), arcoActivo(2L, false)));
+        when(arcoService.listarPorOrigen(1L, 1L)).thenReturn(List.of(arcoActivo(3L, false)));
+
+        var impacto = gatewayService.evaluarImpactoEliminacion(1L, 1L);
+
+        assertTrue(impacto.rompeContinuidad());
+        assertTrue(impacto.advertencias().stream().anyMatch(a -> a.contains("convergencia de 2 entradas")));
+    }
+
+    @Test
+    void impacto_de_un_gateway_divergente_no_avisa_de_convergencia() {
+        when(nodoFlujoService.buscar(1L, 1L)).thenReturn(Optional.of(gateway));
+        when(arcoService.listarPorDestino(1L, 1L)).thenReturn(List.of(arcoActivo(1L, false)));
+        when(arcoService.listarPorOrigen(1L, 1L)).thenReturn(List.of(arcoActivo(3L, true), arcoActivo(4L, true)));
+
+        var impacto = gatewayService.evaluarImpactoEliminacion(1L, 1L);
+
+        assertTrue(impacto.advertencias().stream().noneMatch(a -> a.contains("convergencia")));
+        assertTrue(impacto.advertencias().stream().anyMatch(a -> a.contains("ramificacion con 2 salidas")));
+    }
+
+    @Test
+    void impacto_de_una_convergencia_sin_salida_no_avisa_de_convergencia_rota() {
+        when(nodoFlujoService.buscar(1L, 1L)).thenReturn(Optional.of(gateway));
+        when(arcoService.listarPorDestino(1L, 1L)).thenReturn(List.of(arcoActivo(1L, false), arcoActivo(2L, false)));
+        when(arcoService.listarPorOrigen(1L, 1L)).thenReturn(List.of());
+
+        var impacto = gatewayService.evaluarImpactoEliminacion(1L, 1L);
+
+        assertTrue(impacto.advertencias().stream().noneMatch(a -> a.contains("convergencia")));
+    }
+
+    // ---- historial ----
+
+    @Test
+    void editar_describe_el_nombre_el_tipo_y_las_condiciones_eliminadas() {
+        when(nodoFlujoService.buscar(1L, 1L)).thenReturn(Optional.of(gateway));
+        when(arcoService.listarPorOrigen(1L, 1L)).thenReturn(List.of(arcoActivo(1L, true), arcoActivo(2L, true),
+                arcoActivo(3L, false)));
+        when(nodoFlujoService.guardar(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        gatewayService.editar(1L, 1L, "Reparte", TipoGateway.PARALELO, 0, 0);
+
+        verify(auditoriaModeladoService).registrar(any(), eq("Gateway editado: Reparte (nombre: Decision -> Reparte; "
+                + "tipo: EXCLUSIVO -> PARALELO; condiciones eliminadas en 2 arco(s) saliente(s))."));
+    }
+
+    @Test
+    void editar_sin_cambios_deja_un_historial_simple() {
+        when(nodoFlujoService.buscar(1L, 1L)).thenReturn(Optional.of(gateway));
+        when(nodoFlujoService.guardar(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        gatewayService.editar(1L, 1L, "Decision", TipoGateway.EXCLUSIVO, 9, 9);
+
+        verify(auditoriaModeladoService).registrar(any(), eq("Gateway editado: Decision."));
+    }
+
+    // ---- laneId opcional ----
+
+    private Lane laneDe(Long laneId, Long poolId, Long procesoId, boolean cajaNegra) {
+        Proceso proceso = new Proceso();
+        proceso.setId(procesoId);
+        Pool pool = new Pool();
+        pool.setId(poolId);
+        pool.setProceso(proceso);
+        pool.setCajaNegra(cajaNegra);
+        Lane l = new Lane();
+        l.setId(laneId);
+        l.setNombre("Lane " + laneId);
+        l.setPool(pool);
+        return l;
+    }
+
+    @Test
+    void editar_con_laneId_del_mismo_pool_mueve_el_gateway_y_lo_registra() {
+        Lane destino = laneDe(1001L, 100L, 10L, false);
+        when(nodoFlujoService.buscar(1L, 1L)).thenReturn(Optional.of(gateway));
+        when(laneService.obtener(1L, 1001L)).thenReturn(destino);
+        when(nodoFlujoService.guardar(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Gateway resultado = gatewayService.editar(1L, 1L, "Decision", TipoGateway.EXCLUSIVO, 0, 0, 1001L);
+
+        assertSame(destino, resultado.getLane());
+        verify(auditoriaModeladoService).registrar(any(), contains("lane: null -> Lane 1001"));
+    }
+
+    @Test
+    void editar_con_laneId_igual_a_la_actual_o_nulo_no_consulta_lanes() {
+        when(nodoFlujoService.buscar(1L, 1L)).thenReturn(Optional.of(gateway));
+        when(nodoFlujoService.guardar(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        gatewayService.editar(1L, 1L, "Decision", TipoGateway.EXCLUSIVO, 0, 0, 1000L);
+        gatewayService.editar(1L, 1L, "Decision", TipoGateway.EXCLUSIVO, 0, 0, null);
+
+        verify(laneService, never()).obtener(anyLong(), anyLong());
+    }
+
+    @Test
+    void editar_con_laneId_de_otro_pool_y_con_arcos_activos_falla() {
+        Lane destino = laneDe(2000L, 200L, 10L, false);
+        when(nodoFlujoService.buscar(1L, 1L)).thenReturn(Optional.of(gateway));
+        when(laneService.obtener(1L, 2000L)).thenReturn(destino);
+        when(arcoService.listarPorDestino(1L, 1L)).thenReturn(List.of(arcoActivo(1L, false)));
+
+        var ex = assertThrows(ReglaNegocioException.class,
+                () -> gatewayService.editar(1L, 1L, "Decision", TipoGateway.EXCLUSIVO, 0, 0, 2000L));
+
+        assertTrue(ex.getMessage().contains("otro pool"));
+        verify(nodoFlujoService, never()).guardar(any());
+    }
+
+    @Test
+    void editar_con_laneId_de_pool_caja_negra_o_de_otro_proceso_falla() {
+        Lane cajaNegra = laneDe(3000L, 300L, 10L, true);
+        Lane otroProceso = laneDe(4000L, 400L, 99L, false);
+        when(nodoFlujoService.buscar(1L, 1L)).thenReturn(Optional.of(gateway));
+        when(laneService.obtener(1L, 3000L)).thenReturn(cajaNegra);
+        when(laneService.obtener(1L, 4000L)).thenReturn(otroProceso);
+
+        assertThrows(ReglaNegocioException.class,
+                () -> gatewayService.editar(1L, 1L, "Decision", TipoGateway.EXCLUSIVO, 0, 0, 3000L));
+        assertThrows(ReglaNegocioException.class,
+                () -> gatewayService.editar(1L, 1L, "Decision", TipoGateway.EXCLUSIVO, 0, 0, 4000L));
+    }
 }

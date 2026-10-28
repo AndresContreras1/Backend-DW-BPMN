@@ -20,6 +20,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import static com.facimus.procesos.security.ApiPrincipalRequestPostProcessor.principal;
 
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -41,7 +42,7 @@ class RolProcesoControllerTest {
     void consulta_paginada_retorna_procesos_de_uso() throws Exception {
         RolProcesoConsultaResponse consulta = new RolProcesoConsultaResponse(1L, "Analista", "Analiza",
                 List.of("Compras"), true);
-        given(rolProcesoService.consultarPagina(eq(1L), eq("ana"), eq(0)))
+        given(rolProcesoService.consultarPagina(eq(1L), eq("ana"), eq(0), isNull()))
                 .willReturn(new PageResponse<>(List.of(consulta), 0, 10, 1, 1));
 
         mockMvc.perform(get("/api/v1/roles/consulta?nombre=ana&pagina=0")
@@ -50,6 +51,34 @@ class RolProcesoControllerTest {
                 .andExpect(jsonPath("$.content[0].nombre").value("Analista"))
                 .andExpect(jsonPath("$.content[0].procesos[0]").value("Compras"))
                 .andExpect(jsonPath("$.content[0].enUso").value(true));
+    }
+
+    @Test
+    void consulta_paginada_acepta_tamano_valido() throws Exception {
+        given(rolProcesoService.consultarPagina(eq(1L), isNull(), eq(2), eq(25)))
+                .willReturn(new PageResponse<>(List.of(), 2, 25, 0, 0));
+
+        mockMvc.perform(get("/api/v1/roles/consulta?pagina=2&tamano=25")
+                .with(principal(RolAcceso.ADMINISTRADOR)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size").value(25));
+    }
+
+    @Test
+    void consulta_paginada_con_pagina_negativa_retorna_400_problemdetail() throws Exception {
+        mockMvc.perform(get("/api/v1/roles/consulta?pagina=-1")
+                .with(principal(RolAcceso.ADMINISTRADOR)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.title").exists());
+    }
+
+    @Test
+    void consulta_paginada_con_tamano_fuera_de_rango_retorna_400() throws Exception {
+        mockMvc.perform(get("/api/v1/roles/consulta?tamano=0").with(principal(RolAcceso.ADMINISTRADOR)))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/v1/roles/consulta?tamano=101").with(principal(RolAcceso.ADMINISTRADOR)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

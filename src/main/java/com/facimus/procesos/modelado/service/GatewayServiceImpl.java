@@ -58,6 +58,13 @@ public class GatewayServiceImpl implements GatewayService {
     @Transactional
     @Override
     public Gateway editar(Long empresaId, Long gatewayId, String nombre, TipoGateway tipoGateway, int posX, int posY) {
+        return editar(empresaId, gatewayId, nombre, tipoGateway, posX, posY, null);
+    }
+
+    @Transactional
+    @Override
+    public Gateway editar(Long empresaId, Long gatewayId, String nombre, TipoGateway tipoGateway, int posX, int posY,
+            Long laneId) {
         Gateway gateway = obtener(empresaId, gatewayId);
         validarProcesoActivo(gateway.getLane().getPool().getProceso());
         Long procesoId = gateway.getLane().getPool().getProceso().getId();
@@ -65,13 +72,20 @@ public class GatewayServiceImpl implements GatewayService {
                 && nodoFlujoService.existeNombreEnProceso(nombre, procesoId, empresaId)) {
             throw new ReglaNegocioException("Ya existe un nodo con el nombre \"" + nombre + "\" en este proceso.");
         }
+        Lane nuevoLane = ReglasMovimientoNodo.resolverLaneDestino(empresaId, gateway, laneId, "gateways",
+                laneService, arcoService);
+        long condicionesEliminadas = 0;
         if (tipoGateway == TipoGateway.PARALELO && gateway.getTipoGateway() != TipoGateway.PARALELO) {
-            arcoService.listarPorOrigen(empresaId, gatewayId).stream()
+            var conCondicion = arcoService.listarPorOrigen(empresaId, gatewayId).stream()
                     .filter(arco -> arco.isActivo())
-                    .forEach(arco -> {
-                        arco.setCondicion(null);
-                        arcoService.guardar(arco);
-                    });
+                    .toList();
+            for (var arco : conCondicion) {
+                if (org.springframework.util.StringUtils.hasText(arco.getCondicion())) {
+                    condicionesEliminadas++;
+                }
+                arco.setCondicion(null);
+                arcoService.guardar(arco);
+            }
         }
         if ((tipoGateway == TipoGateway.EXCLUSIVO || tipoGateway == TipoGateway.INCLUSIVO)
                 && gateway.getTipoGateway() == TipoGateway.PARALELO) {
@@ -83,13 +97,34 @@ public class GatewayServiceImpl implements GatewayService {
                         "No se puede cambiar a " + tipoGateway + " porque existen arcos salientes sin condicion.");
             }
         }
+        String nombreAnterior = gateway.getNombre();
+        TipoGateway tipoAnterior = gateway.getTipoGateway();
+        String laneAnterior = gateway.getLane().getNombre();
         gateway.setNombre(nombre);
         gateway.setTipoGateway(tipoGateway);
         gateway.setPosicionX(posX);
         gateway.setPosicionY(posY);
+        if (nuevoLane != null) {
+            gateway.setLane(nuevoLane);
+        }
         gateway = (Gateway) nodoFlujoService.guardar(gateway);
+
+        List<String> cambios = new java.util.ArrayList<>();
+        if (!nombreAnterior.equals(nombre)) {
+            cambios.add("nombre: " + nombreAnterior + " -> " + nombre);
+        }
+        if (tipoAnterior != tipoGateway) {
+            cambios.add("tipo: " + tipoAnterior + " -> " + tipoGateway);
+        }
+        if (condicionesEliminadas > 0) {
+            cambios.add("condiciones eliminadas en " + condicionesEliminadas + " arco(s) saliente(s)");
+        }
+        if (nuevoLane != null) {
+            cambios.add("lane: " + laneAnterior + " -> " + nuevoLane.getNombre());
+        }
         auditoriaModeladoService.registrar(gateway.getLane().getPool().getProceso(),
-                "Gateway editado: " + gateway.getNombre() + ".");
+                "Gateway editado: " + gateway.getNombre()
+                        + (cambios.isEmpty() ? "." : " (" + String.join("; ", cambios) + ")."));
         return gateway;
     }
 
@@ -109,6 +144,10 @@ public class GatewayServiceImpl implements GatewayService {
         }
         if (salidas >= 2) {
             advertencias.add("La eliminacion rompe una ramificacion con " + salidas + " salidas.");
+        }
+        if (entradas >= 2 && salidas >= 1) {
+            advertencias.add("La eliminacion rompe una convergencia de " + entradas + " entradas hacia "
+                    + salidas + " salida(s).");
         }
         return new ImpactoEliminacion(!advertencias.isEmpty(), advertencias);
     }
@@ -159,7 +198,7 @@ public class GatewayServiceImpl implements GatewayService {
     @Override
     public GatewayResponse editar(Long empresaId, Long gatewayId, GatewayRequest request) {
         Gateway gateway = editar(empresaId, gatewayId, request.nombre(), request.tipoGateway(),
-                request.posicionX(), request.posicionY());
+                request.posicionX(), request.posicionY(), request.laneId());
         return modelMapper.map(gateway, GatewayResponse.class);
     }
 

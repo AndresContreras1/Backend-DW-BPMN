@@ -2,7 +2,9 @@ package com.facimus.procesos.modelado.service;
 
 import com.facimus.procesos.modelado.controller.dto.LaneResponse;
 import com.facimus.procesos.modelado.controller.dto.ReordenarLanesRequest;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import com.facimus.procesos.gestion.model.RolProceso;
 import com.facimus.procesos.modelado.model.Lane;
 
@@ -25,6 +27,15 @@ public interface LaneService {
     List<Lane> listarPorRolProceso(Long empresaId, Long rolProcesoId);
 
     long contarPorRolProceso(Long empresaId, Long rolProcesoId);
+
+    /**
+     * Para cada rol, los nombres (ordenados) de los procesos ACTIVOS donde alguna lane lo usa, en una
+     * sola consulta agrupada. Los roles sin uso no aparecen en el mapa.
+     */
+    Map<Long, List<String>> procesosActivosPorRol(Long empresaId, Collection<Long> rolProcesoIds);
+
+    /** Actualiza la etiqueta (nombre) de todas las lanes que usan el rol, tras renombrarlo. */
+    void renombrarLanesDeRol(Long empresaId, Long rolProcesoId, String nuevoNombre);
 
     void eliminarPorPool(Long empresaId, Long poolId);
 

@@ -123,7 +123,7 @@ class PoolServiceTest {
 
         poolService.editar(1L, 100L, "Pool Editado", TipoParticipante.PROVEEDOR, false);
 
-        verify(eventPublisher, never()).publishEvent(any());
+        verify(eventPublisher, never()).publishEvent(any(PoolMarcadoCajaNegraEvent.class));
     }
 
     @Test
@@ -199,5 +199,56 @@ class PoolServiceTest {
 
         assertThrows(RecursoNoEncontradoException.class,
                 () -> poolService.obtener(1L, 999L));
+    }
+
+    @Test
+    @DisplayName("Cambiar el tipo de participante publica PoolParticipanteModificadoEvent antes de guardar")
+    void editar_cambio_de_tipo_publica_evento_antes_de_guardar() {
+        when(poolRepository.findByIdAndEmpresaId(100L, 1L)).thenReturn(Optional.of(pool));
+        when(poolRepository.save(any(Pool.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        poolService.editar(1L, 100L, "Pool", TipoParticipante.PROVEEDOR, false);
+
+        InOrder orden = inOrder(eventPublisher, poolRepository);
+        orden.verify(eventPublisher).publishEvent(
+                new com.facimus.procesos.common.event.PoolParticipanteModificadoEvent(1L, 100L));
+        orden.verify(poolRepository).save(any(Pool.class));
+    }
+
+    @Test
+    @DisplayName("Cambiar la caja negra publica PoolParticipanteModificadoEvent")
+    void editar_cambio_de_caja_negra_publica_evento_de_participante() {
+        when(poolRepository.findByIdAndEmpresaId(100L, 1L)).thenReturn(Optional.of(pool));
+        when(poolRepository.save(any(Pool.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        poolService.editar(1L, 100L, "Pool", TipoParticipante.EMPRESA, true);
+
+        verify(eventPublisher).publishEvent(
+                new com.facimus.procesos.common.event.PoolParticipanteModificadoEvent(1L, 100L));
+    }
+
+    @Test
+    @DisplayName("Renombrar sin tocar tipo ni caja negra no publica PoolParticipanteModificadoEvent")
+    void editar_solo_nombre_no_publica_evento_de_participante() {
+        when(poolRepository.findByIdAndEmpresaId(100L, 1L)).thenReturn(Optional.of(pool));
+        when(poolRepository.save(any(Pool.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        poolService.editar(1L, 100L, "Otro nombre", TipoParticipante.EMPRESA, false);
+
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    @DisplayName("Si el listener rechaza el cambio de participante, el pool no se guarda")
+    void editar_no_guarda_si_el_listener_rechaza_el_cambio_de_participante() {
+        when(poolRepository.findByIdAndEmpresaId(100L, 1L)).thenReturn(Optional.of(pool));
+        doThrow(new ReglaNegocioException("es destino externo"))
+                .when(eventPublisher).publishEvent(any(com.facimus.procesos.common.event.PoolParticipanteModificadoEvent.class));
+
+        assertThrows(ReglaNegocioException.class,
+                () -> poolService.editar(1L, 100L, "Pool", TipoParticipante.PROVEEDOR, false));
+
+        verify(poolRepository, never()).save(any());
+        assertEquals(TipoParticipante.EMPRESA, pool.getTipoParticipante());
     }
 }

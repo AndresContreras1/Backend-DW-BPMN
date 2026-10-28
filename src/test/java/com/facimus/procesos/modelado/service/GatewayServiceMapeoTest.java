@@ -57,7 +57,7 @@ class GatewayServiceMapeoTest {
     @Test
     void GatewayServiceImpl_editarConRequest_devuelveResponse() {
         doReturn(gateway(1L, "Nuevo")).when(gatewayService)
-                .editar(1L, 1L, "Nuevo", TipoGateway.EXCLUSIVO, 300, 150);
+                .editar(1L, 1L, "Nuevo", TipoGateway.EXCLUSIVO, 300, 150, null);
 
         GatewayResponse r = gatewayService.editar(1L, 1L,
                 new GatewayRequest("Nuevo", TipoGateway.EXCLUSIVO, 300, 150));

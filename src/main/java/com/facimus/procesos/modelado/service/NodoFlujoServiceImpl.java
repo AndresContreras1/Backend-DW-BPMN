@@ -66,6 +66,14 @@ public class NodoFlujoServiceImpl implements NodoFlujoService {
                 nombre, procesoId, empresaId);
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public List<NodoFlujo> listarActivosPorNombre(String nombre, Long procesoId, Long empresaId) {
+        return nodoFlujoRepository.buscarActivosPorNombre(nombre, procesoId, empresaId).stream()
+                .map(nodo -> (NodoFlujo) org.hibernate.Hibernate.unproxy(nodo))
+                .toList();
+    }
+
     @Override
     public NodoFlujo guardar(NodoFlujo nodo) {
         return nodoFlujoRepository.save(nodo);

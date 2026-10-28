@@ -1,5 +1,6 @@
 package com.facimus.procesos.modelado.service;
 
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -128,6 +129,50 @@ class CorrelacionOrquestadorServiceTest {
         assertThrows(com.facimus.procesos.common.RecursoNoEncontradoException.class,
                 () -> correlacionOrquestadorService.eliminar(1L, 5L));
 
+        verify(mensajeService, never()).guardar(any());
+    }
+
+    @Test
+    @DisplayName("Definir solo considera los mensajes activos para la ambiguedad")
+    void definir_ignora_los_mensajes_inactivos_al_validar_la_ambiguedad() {
+        mensaje.setActivo(true);
+        Mensaje eliminado = new Mensaje();
+        eliminado.setId(6L);
+        eliminado.setNombre("Orden");
+        eliminado.setClaveCorrelacion("orderId");
+        eliminado.setActivo(false);
+        when(mensajeService.obtener(1L, 5L)).thenReturn(mensaje);
+        when(mensajeService.listarTodosPorProceso(1L, 10L)).thenReturn(List.of(mensaje, eliminado));
+        when(correlacionService.definir(any(Mensaje.class), any(), anyString())).thenReturn(correlacion);
+
+        correlacionOrquestadorService.definir(1L, 5L, "orderId");
+
+        verify(correlacionService).definir(mensaje, List.of(mensaje), "orderId");
+    }
+
+    @Test
+    @DisplayName("Definir en un proceso inactivo se rechaza sin tocar nada")
+    void definir_en_proceso_inactivo_falla() {
+        mensaje.getProceso().setActivo(false);
+        when(mensajeService.obtener(1L, 5L)).thenReturn(mensaje);
+
+        var ex = assertThrows(ReglaNegocioException.class,
+                () -> correlacionOrquestadorService.definir(1L, 5L, "orderId"));
+
+        assertEquals("No se permite modelar en un proceso inactivo.", ex.getMessage());
+        verify(correlacionService, never()).definir(any(), any(), anyString());
+        verify(mensajeService, never()).guardar(any());
+    }
+
+    @Test
+    @DisplayName("Eliminar la correlacion en un proceso inactivo se rechaza sin tocar nada")
+    void eliminar_en_proceso_inactivo_falla() {
+        mensaje.getProceso().setActivo(false);
+        when(mensajeService.obtener(1L, 5L)).thenReturn(mensaje);
+
+        assertThrows(ReglaNegocioException.class, () -> correlacionOrquestadorService.eliminar(1L, 5L));
+
+        verify(correlacionService, never()).eliminar(anyLong(), any());
         verify(mensajeService, never()).guardar(any());
     }
 }

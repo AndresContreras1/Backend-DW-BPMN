@@ -19,6 +19,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.facimus.procesos.modelado.controller.dto.EventoMensajeRequest;
 import com.facimus.procesos.modelado.controller.dto.EventoMensajeResponse;
+import com.facimus.procesos.modelado.controller.dto.ImpactoEliminacionResponse;
 import com.facimus.procesos.modelado.service.EventoMensajeService;
 import com.facimus.procesos.security.ApiPrincipal;
 
@@ -88,7 +89,8 @@ public class EventoMensajeController {
     }
 
     @PutMapping("/eventos-mensaje/{id}")
-    @Operation(summary = "Editar un evento de mensaje")
+    @Operation(summary = "Editar un evento de mensaje",
+            description = "Opcionalmente cambia de lane (laneId) y fija las actividades que usan sus datos (actividadIds, solo CATCH).")
     @ApiResponse(responseCode = "200", description = "Operacion exitosa.",
             content = @Content(schema = @Schema(implementation = EventoMensajeResponse.class)))
     @ApiResponse(responseCode = "400", description = "Solicitud invalida (errores de validacion o JSON malformado).",
@@ -99,14 +101,31 @@ public class EventoMensajeController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     @ApiResponse(responseCode = "404", description = "El recurso solicitado no existe.",
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "409", description = "Conflicto: nombre repetido o evento vinculado a mensajes activos.",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<EventoMensajeResponse> editar(@PathVariable Long id,
             @Validated @RequestBody EventoMensajeRequest request,
             @AuthenticationPrincipal ApiPrincipal principal) {
         return ResponseEntity.ok(eventoMensajeService.editar(principal.empresaId(), id, request));
     }
 
+    @GetMapping("/eventos-mensaje/{id}/impacto-eliminacion")
+    @Operation(summary = "Evaluar el impacto de eliminar un evento de mensaje",
+            description = "Devuelve advertencias (arcos y mensajes afectados) sin eliminar nada.")
+    @ApiResponse(responseCode = "200", description = "Operacion exitosa.",
+            content = @Content(schema = @Schema(implementation = ImpactoEliminacionResponse.class)))
+    @ApiResponse(responseCode = "401", description = "No autenticado: token ausente o invalido.",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "404", description = "El recurso solicitado no existe.",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    public ResponseEntity<ImpactoEliminacionResponse> impactoEliminacion(@PathVariable Long id,
+            @AuthenticationPrincipal ApiPrincipal principal) {
+        return ResponseEntity.ok(eventoMensajeService.consultarImpactoEliminacion(principal.empresaId(), id));
+    }
+
     @DeleteMapping("/eventos-mensaje/{id}")
-    @Operation(summary = "Eliminar un evento de mensaje", description = "Desactiva tambien los arcos conectados.")
+    @Operation(summary = "Eliminar un evento de mensaje",
+            description = "Desactiva tambien los arcos conectados. Se rechaza (409) si lo usa un mensaje activo.")
     @ApiResponse(responseCode = "204", description = "Operacion exitosa, sin contenido.")
     @ApiResponse(responseCode = "401", description = "No autenticado: token ausente o invalido.",
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))

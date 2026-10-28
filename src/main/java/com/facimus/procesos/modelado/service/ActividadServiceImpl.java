@@ -76,6 +76,10 @@ public class ActividadServiceImpl implements ActividadService {
             Long laneId, TipoActividad tipoActividad) {
         Actividad actividad = obtener(empresaId, actividadId);
         validarProcesoActivo(actividad.getLane().getPool().getProceso());
+        String nombreAnterior = actividad.getNombre();
+        Lane laneAnterior = actividad.getLane();
+        TipoActividad tipoAnterior = actividad.getTipoActividad() != null
+                ? actividad.getTipoActividad() : TipoActividad.TAREA;
         if (laneId != null && !laneId.equals(actividad.getLane().getId())) {
             Lane nuevoLane = laneService.obtener(empresaId, laneId);
             if (nuevoLane.getPool().isCajaNegra()) {
@@ -111,8 +115,27 @@ public class ActividadServiceImpl implements ActividadService {
         actividad.setPosicionX(posX);
         actividad.setPosicionY(posY);
         actividad = (Actividad) nodoFlujoService.guardar(actividad);
+        List<String> cambios = new java.util.ArrayList<>();
+        if (!nombreAnterior.equals(nombre)) {
+            cambios.add("nombre: " + nombreAnterior + " -> " + nombre);
+        }
+        if (!laneAnterior.getId().equals(actividad.getLane().getId())) {
+            cambios.add("lane: " + laneAnterior.getNombre() + " -> " + actividad.getLane().getNombre());
+            String rolAnterior = laneAnterior.getRolProceso() != null ? laneAnterior.getRolProceso().getNombre() : null;
+            String rolNuevo = actividad.getLane().getRolProceso() != null
+                    ? actividad.getLane().getRolProceso().getNombre() : null;
+            if (rolAnterior != null && rolNuevo != null && !rolAnterior.equals(rolNuevo)) {
+                cambios.add("rol: " + rolAnterior + " -> " + rolNuevo);
+            }
+        }
+        TipoActividad tipoNuevo = actividad.getTipoActividad() != null
+                ? actividad.getTipoActividad() : TipoActividad.TAREA;
+        if (tipoAnterior != tipoNuevo) {
+            cambios.add("tipo: " + tipoAnterior + " -> " + tipoNuevo);
+        }
         auditoriaModeladoService.registrar(actividad.getLane().getPool().getProceso(),
-                "Actividad editada: " + actividad.getNombre() + ".");
+                "Actividad editada: " + actividad.getNombre()
+                        + (cambios.isEmpty() ? "." : " (" + String.join("; ", cambios) + ")."));
         return actividad;
     }
 
@@ -142,7 +165,7 @@ public class ActividadServiceImpl implements ActividadService {
             }
         });
 
-        if (!entrantes.isEmpty() && !salientes.isEmpty()) {
+        if (!entrantes.isEmpty() || !salientes.isEmpty()) {
             advertencias.add("Se eliminaran los arcos conectados a " + actividad.getNombre() + ".");
         }
         return new ImpactoEliminacion(!advertencias.isEmpty(), advertencias);

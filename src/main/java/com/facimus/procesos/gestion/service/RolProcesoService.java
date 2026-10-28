@@ -32,5 +32,6 @@ public interface RolProcesoService {
     RolProcesoVistaResponse editar(Long empresaId, Long rolId, RolProcesoRequest request);
     RolProcesoVistaResponse consultarDetalle(Long empresaId, Long rolId);
     List<RolProcesoVistaResponse> consultarConUso(Long empresaId);
-    PageResponse<RolProcesoConsultaResponse> consultarPagina(Long empresaId, String nombre, int pagina);
+    /** tamano: null = 10 por pagina. Orden estable por nombre (sin distinguir mayusculas) y luego id. */
+    PageResponse<RolProcesoConsultaResponse> consultarPagina(Long empresaId, String nombre, int pagina, Integer tamano);
 }

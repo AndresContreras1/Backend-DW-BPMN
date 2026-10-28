@@ -31,6 +31,10 @@ class EventoMensajeServiceMapeoTest {
     @Mock
     private ArcoService arcoService;
     @Mock
+    private ActividadService actividadService;
+    @Mock
+    private MensajeService mensajeService;
+    @Mock
     private AuditoriaModeladoService auditoriaModeladoService;
     @Spy
     private ModelMapper modelMapper = new ModelMapperConfig().modelMapper();
@@ -42,7 +46,7 @@ class EventoMensajeServiceMapeoTest {
     @Test
     void EventoMensajeServiceImpl_crearConRequest_devuelveResponse() {
         doReturn(evento(5L, "Orden", TipoEventoMensaje.THROW)).when(eventoMensajeService)
-                .crear(1L, 2L, "Orden", TipoEventoMensaje.THROW, "payload", "pedidoId", 10, 20, false);
+                .crear(1L, 2L, "Orden", TipoEventoMensaje.THROW, "payload", "pedidoId", 10, 20, false, null);
 
         EventoMensajeResponse r = eventoMensajeService.crear(1L, 2L, new EventoMensajeRequest("Orden",
                 TipoEventoMensaje.THROW, "payload", "pedidoId", 10, 20, false));
@@ -55,7 +59,8 @@ class EventoMensajeServiceMapeoTest {
     @Test
     void EventoMensajeServiceImpl_editarConRequest_devuelveResponse() {
         doReturn(evento(5L, "Orden v2", TipoEventoMensaje.CATCH_INTERMEDIO)).when(eventoMensajeService)
-                .editar(1L, 5L, "Orden v2", TipoEventoMensaje.CATCH_INTERMEDIO, "payload", "pedidoId", 10, 20, false);
+                .editar(1L, 5L, "Orden v2", TipoEventoMensaje.CATCH_INTERMEDIO, "payload", "pedidoId", 10, 20, false, null,
+                        null);
 
         EventoMensajeResponse r = eventoMensajeService.editar(1L, 5L, new EventoMensajeRequest("Orden v2",
                 TipoEventoMensaje.CATCH_INTERMEDIO, "payload", "pedidoId", 10, 20, false));

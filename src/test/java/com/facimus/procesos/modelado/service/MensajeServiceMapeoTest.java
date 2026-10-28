@@ -1,6 +1,7 @@
 package com.facimus.procesos.modelado.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,6 +25,7 @@ import com.facimus.procesos.gestion.service.ProcesoService;
 import com.facimus.procesos.modelado.controller.dto.EditarMensajeRequest;
 import com.facimus.procesos.modelado.controller.dto.MensajeRequest;
 import com.facimus.procesos.modelado.controller.dto.MensajeResponse;
+import com.facimus.procesos.modelado.model.EventoMensaje;
 import com.facimus.procesos.modelado.model.Mensaje;
 import com.facimus.procesos.modelado.model.PoliticaFalloNotificacion;
 import com.facimus.procesos.modelado.model.PoliticaMensajeSinCaso;
@@ -94,6 +96,9 @@ class MensajeServiceMapeoTest {
 
     @Test
     void MensajeServiceImpl_editarCompleto_usaFirmaCompletaYDevuelveResponse() {
+        Mensaje conThrow = mensaje(1L, "Nuevo");
+        conThrow.setEventoThrow(new EventoMensaje());
+        doReturn(conThrow).when(mensajeService).obtener(1L, 1L);
         doReturn(mensaje(1L, "Nuevo")).when(mensajeService).editar(1L, 1L, "Nuevo", "Contenido", 40L, "clave",
                 TipoDestinoExterno.COLA, "cola-1", PoliticaFalloNotificacion.FINALIZAR_PROCESO, 50L,
                 PoliticaMensajeSinCaso.INICIAR_CASO_NUEVO);
@@ -103,6 +108,17 @@ class MensajeServiceMapeoTest {
                 PoliticaMensajeSinCaso.INICIAR_CASO_NUEVO));
 
         assertThat(r.nombre()).isEqualTo("Nuevo");
+    }
+
+    @Test
+    void MensajeServiceImpl_editarCamposAvanzadosSinThrow_lanza400() {
+        doReturn(mensaje(1L, "Nuevo")).when(mensajeService).obtener(1L, 1L);
+
+        assertThatThrownBy(() -> mensajeService.editar(1L, 1L, new EditarMensajeRequest("Nuevo", "Contenido", null,
+                "clave", null, null, null, null, null)))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .extracting(e -> ((org.springframework.web.server.ResponseStatusException) e).getStatusCode().value())
+                .isEqualTo(400);
     }
 
     @Test

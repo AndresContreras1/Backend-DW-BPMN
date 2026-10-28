@@ -154,4 +154,37 @@ class LaneServiceTest {
 
         assertDoesNotThrow(() -> laneService.alMarcarPoolCajaNegra(new PoolMarcadoCajaNegraEvent(1L, 100L)));
     }
+
+    @Test
+    void renombrarLanesDeRol_actualiza_la_etiqueta_de_todas_las_lanes_del_rol() {
+        lane1.setNombre("Analista");
+        lane2.setNombre("Analista");
+        when(laneRepository.findAllByRolProcesoIdAndEmpresaId(5L, 1L)).thenReturn(List.of(lane1, lane2));
+
+        laneService.renombrarLanesDeRol(1L, 5L, "Analista Senior");
+
+        assertEquals("Analista Senior", lane1.getNombre());
+        assertEquals("Analista Senior", lane2.getNombre());
+        verify(laneRepository).save(lane1);
+        verify(laneRepository).save(lane2);
+    }
+
+    @Test
+    void procesosActivosPorRol_agrupa_y_ordena_los_nombres_con_una_sola_consulta() {
+        when(laneRepository.procesosActivosPorRoles(List.of(5L, 6L), 1L)).thenReturn(List.of(
+                new Object[] { 5L, 11L, "Ventas" }, new Object[] { 5L, 10L, "compras" },
+                new Object[] { 6L, 10L, "compras" }));
+
+        var resultado = laneService.procesosActivosPorRol(1L, List.of(5L, 6L));
+
+        assertEquals(List.of("compras", "Ventas"), resultado.get(5L));
+        assertEquals(List.of("compras"), resultado.get(6L));
+        verify(laneRepository, times(1)).procesosActivosPorRoles(any(), anyLong());
+    }
+
+    @Test
+    void procesosActivosPorRol_sin_roles_no_consulta() {
+        assertTrue(laneService.procesosActivosPorRol(1L, List.of()).isEmpty());
+        verify(laneRepository, never()).procesosActivosPorRoles(any(), anyLong());
+    }
 }

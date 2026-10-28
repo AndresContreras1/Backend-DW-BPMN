@@ -1,5 +1,6 @@
 package com.facimus.procesos.modelado.service;
 
+import com.facimus.procesos.modelado.model.NodoFlujo;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -274,5 +275,94 @@ class ActividadServiceTest {
                 () -> actividadService.editar(1L, 1L, "Tarea A", "Desc", 0, 0, 3000L));
 
         assertTrue(ex.getMessage().contains("arcos conectados"));
+    }
+
+    // ---- impacto: avisa de los arcos eliminados con entrantes O salientes ----
+
+    private Arco arcoEntre(Long id, NodoFlujo origen, NodoFlujo destino) {
+        Arco arco = new Arco();
+        arco.setId(id);
+        arco.setOrigen(origen);
+        arco.setDestino(destino);
+        arco.setActivo(true);
+        return arco;
+    }
+
+    @Test
+    void impacto_con_solo_arcos_entrantes_avisa_que_se_eliminan_los_arcos() {
+        Actividad origen = new Actividad();
+        origen.setId(20L);
+        origen.setNombre("Origen");
+        Arco entrada = arcoEntre(100L, origen, actividad);
+        Arco otraSalidaDelOrigen = arcoEntre(101L, origen, new Actividad());
+        when(nodoFlujoService.buscar(1L, 1L)).thenReturn(Optional.of(actividad));
+        when(arcoService.listarPorDestino(1L, 1L)).thenReturn(List.of(entrada));
+        when(arcoService.listarPorOrigen(1L, 1L)).thenReturn(List.of());
+        when(arcoService.listarPorOrigen(1L, 20L)).thenReturn(List.of(entrada, otraSalidaDelOrigen));
+
+        var impacto = actividadService.evaluarImpactoEliminacion(1L, 1L);
+
+        assertEquals(List.of("Se eliminaran los arcos conectados a Tarea A."), impacto.advertencias());
+        assertTrue(impacto.rompeContinuidad());
+    }
+
+    @Test
+    void impacto_con_solo_arcos_salientes_avisa_que_se_eliminan_los_arcos() {
+        Actividad destino = new Actividad();
+        destino.setId(30L);
+        destino.setNombre("Destino");
+        Arco salida = arcoEntre(100L, actividad, destino);
+        Arco otraEntradaDelDestino = arcoEntre(101L, new Actividad(), destino);
+        when(nodoFlujoService.buscar(1L, 1L)).thenReturn(Optional.of(actividad));
+        when(arcoService.listarPorDestino(1L, 1L)).thenReturn(List.of());
+        when(arcoService.listarPorOrigen(1L, 1L)).thenReturn(List.of(salida));
+        when(arcoService.listarPorDestino(1L, 30L)).thenReturn(List.of(salida, otraEntradaDelDestino));
+
+        var impacto = actividadService.evaluarImpactoEliminacion(1L, 1L);
+
+        assertEquals(List.of("Se eliminaran los arcos conectados a Tarea A."), impacto.advertencias());
+    }
+
+    @Test
+    void impacto_de_una_actividad_sin_arcos_no_advierte_nada() {
+        when(nodoFlujoService.buscar(1L, 1L)).thenReturn(Optional.of(actividad));
+
+        var impacto = actividadService.evaluarImpactoEliminacion(1L, 1L);
+
+        assertTrue(impacto.advertencias().isEmpty());
+        assertFalse(impacto.rompeContinuidad());
+    }
+
+    // ---- historial: describe el cambio ----
+
+    @Test
+    void editar_describe_nombre_lane_rol_y_tipo_anterior_y_nuevo() {
+        var rolVendedor = new com.facimus.procesos.gestion.model.RolProceso();
+        rolVendedor.setNombre("Vendedor");
+        var rolTecnico = new com.facimus.procesos.gestion.model.RolProceso();
+        rolTecnico.setNombre("Tecnico");
+        lane1.setNombre("Ventas");
+        lane1.setRolProceso(rolVendedor);
+        lane2.setNombre("Soporte");
+        lane2.setRolProceso(rolTecnico);
+        when(nodoFlujoService.buscar(1L, 1L)).thenReturn(Optional.of(actividad));
+        when(laneService.obtener(1L, 2000L)).thenReturn(lane2);
+        when(nodoFlujoService.guardar(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        actividadService.editar(1L, 1L, "Tarea B", "Desc", 0, 0, 2000L,
+                com.facimus.procesos.modelado.model.TipoActividad.USUARIO);
+
+        verify(auditoriaModeladoService).registrar(eq(proceso), eq("Actividad editada: Tarea B (nombre: Tarea A -> "
+                + "Tarea B; lane: Ventas -> Soporte; rol: Vendedor -> Tecnico; tipo: TAREA -> USUARIO)."));
+    }
+
+    @Test
+    void editar_sin_cambios_deja_un_historial_simple() {
+        when(nodoFlujoService.buscar(1L, 1L)).thenReturn(Optional.of(actividad));
+        when(nodoFlujoService.guardar(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        actividadService.editar(1L, 1L, "Tarea A", "Otra descripcion", 3, 4, null);
+
+        verify(auditoriaModeladoService).registrar(eq(proceso), eq("Actividad editada: Tarea A."));
     }
 }

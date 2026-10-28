@@ -3,7 +3,11 @@ package com.facimus.procesos.modelado.service;
 import com.facimus.procesos.modelado.controller.dto.LaneResponse;
 import com.facimus.procesos.modelado.controller.dto.ReordenarLanesRequest;
 import org.modelmapper.ModelMapper;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -147,6 +151,29 @@ public class LaneServiceImpl implements LaneService {
     @Override
     public long contarPorRolProceso(Long empresaId, Long rolProcesoId) {
         return laneRepository.countByRolProcesoIdAndEmpresaId(rolProcesoId, empresaId);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Map<Long, List<String>> procesosActivosPorRol(Long empresaId, Collection<Long> rolProcesoIds) {
+        if (rolProcesoIds == null || rolProcesoIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, List<String>> procesosPorRol = new HashMap<>();
+        for (Object[] fila : laneRepository.procesosActivosPorRoles(rolProcesoIds, empresaId)) {
+            procesosPorRol.computeIfAbsent((Long) fila[0], rol -> new ArrayList<>()).add((String) fila[2]);
+        }
+        procesosPorRol.values().forEach(nombres -> nombres.sort(String::compareToIgnoreCase));
+        return procesosPorRol;
+    }
+
+    @Transactional
+    @Override
+    public void renombrarLanesDeRol(Long empresaId, Long rolProcesoId, String nuevoNombre) {
+        laneRepository.findAllByRolProcesoIdAndEmpresaId(rolProcesoId, empresaId).forEach(lane -> {
+            lane.setNombre(nuevoNombre);
+            laneRepository.save(lane);
+        });
     }
 
     @Transactional

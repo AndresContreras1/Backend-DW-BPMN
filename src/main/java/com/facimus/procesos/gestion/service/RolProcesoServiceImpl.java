@@ -6,9 +6,10 @@ import com.facimus.procesos.gestion.controller.dto.RolProcesoRequest;
 import com.facimus.procesos.gestion.controller.dto.RolProcesoVistaResponse;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,7 +25,6 @@ import com.facimus.procesos.gestion.model.RolProceso;
 import com.facimus.procesos.gestion.repository.RolProcesoRepository;
 import com.facimus.procesos.gestion.service.dto.RolProcesoConsulta;
 import com.facimus.procesos.gestion.service.dto.RolProcesoVista;
-import com.facimus.procesos.modelado.model.Lane;
 import com.facimus.procesos.modelado.service.LaneService;
 import com.facimus.procesos.security.ApiPrincipal;
 
@@ -47,12 +47,13 @@ public class RolProcesoServiceImpl implements RolProcesoService {
     @Transactional
     @Override
     public RolProceso crear(Long empresaId, String nombre, String descripcion) {
-        validarNombreUnico(empresaId, nombre, null);
+        String nombreLimpio = nombre.trim();
+        validarNombreUnico(empresaId, nombreLimpio, null);
         Empresa empresa = empresaService.obtener(empresaId);
 
         RolProceso rol = new RolProceso();
         rol.setEmpresa(empresa);
-        rol.setNombre(nombre);
+        rol.setNombre(nombreLimpio);
         rol.setDescripcion(descripcion);
         rol.setActivo(true);
         return rolProcesoRepository.save(rol);
@@ -62,11 +63,20 @@ public class RolProcesoServiceImpl implements RolProcesoService {
     @Override
     public RolProceso editar(Long empresaId, Long rolId, String nombre, String descripcion) {
         RolProceso rol = obtener(empresaId, rolId);
-        validarNombreUnico(empresaId, nombre, rolId);
-        rol.setNombre(nombre);
+        String nombreLimpio = nombre.trim();
+        validarNombreUnico(empresaId, nombreLimpio, rolId);
+        String nombreAnterior = rol.getNombre();
+        rol.setNombre(nombreLimpio);
         rol.setDescripcion(descripcion);
         rol = rolProcesoRepository.save(rol);
-        registrarCambioEnProcesos(empresaId, rolId, "Rol de proceso editado: " + rol.getNombre() + ".");
+        boolean renombrado = !nombreAnterior.equals(nombreLimpio);
+        if (renombrado) {
+            // La etiqueta de las lanes que usan el rol sigue al nombre del rol.
+            laneService.renombrarLanesDeRol(empresaId, rolId, nombreLimpio);
+        }
+        registrarCambioEnProcesos(empresaId, rolId, renombrado
+                ? "Rol de proceso renombrado: \"" + nombreAnterior + "\" -> \"" + nombreLimpio + "\"."
+                : "Rol de proceso editado: " + rol.getNombre() + ".");
         return rol;
     }
 
@@ -74,12 +84,11 @@ public class RolProcesoServiceImpl implements RolProcesoService {
     @Override
     public void eliminar(Long empresaId, Long rolId) {
         RolProceso rol = obtener(empresaId, rolId);
-        List<Lane> lanesQueLoUsan = laneService.listarPorRolProceso(empresaId, rolId);
-        if (!lanesQueLoUsan.isEmpty()) {
-            String procesos = lanesQueLoUsan.stream()
-                    .map(lane -> lane.getPool().getProceso().getNombre())
-                    .distinct()
-                    .collect(Collectors.joining(", "));
+        // Solo cuentan los procesos activos: las lanes de procesos dados de baja no bloquean la baja del rol.
+        List<String> procesosQueLoUsan = laneService.procesosActivosPorRol(empresaId, List.of(rolId))
+                .getOrDefault(rolId, List.of());
+        if (!procesosQueLoUsan.isEmpty()) {
+            String procesos = String.join(", ", procesosQueLoUsan);
             throw new ReglaNegocioException(
                     "El rol \"" + rol.getNombre() + "\" esta en uso en los procesos: " + procesos
                             + ". No se puede eliminar.");
@@ -91,9 +100,12 @@ public class RolProcesoServiceImpl implements RolProcesoService {
     @Transactional(readOnly = true)
     @Override
     public List<RolProcesoVista> listarConUso(Long empresaId) {
-        return rolProcesoRepository.findAllByEmpresaIdAndActivoTrue(empresaId).stream()
+        List<RolProceso> roles = rolProcesoRepository.findAllByEmpresaIdAndActivoTrue(empresaId);
+        Map<Long, List<String>> procesosPorRol = laneService.procesosActivosPorRol(empresaId,
+                roles.stream().map(RolProceso::getId).toList());
+        return roles.stream()
                 .map(rol -> {
-                    long usos = laneService.contarPorRolProceso(empresaId, rol.getId());
+                    long usos = procesosPorRol.getOrDefault(rol.getId(), List.of()).size();
                     return new RolProcesoVista(rol, usos, usos > 0);
                 })
                 .toList();
@@ -106,15 +118,10 @@ public class RolProcesoServiceImpl implements RolProcesoService {
                 ? rolProcesoRepository.findAllByEmpresaIdAndActivoTrue(empresaId, pageable)
                 : rolProcesoRepository.findAllByEmpresaIdAndActivoTrueAndNombreContainingIgnoreCase(
                         empresaId, nombre.trim(), pageable);
-        return pagina.map(rol -> {
-            List<String> procesos = laneService.listarPorRolProceso(empresaId, rol.getId())
-                    .stream()
-                    .map(lane -> lane.getPool().getProceso().getNombre())
-                    .distinct()
-                    .sorted()
-                    .toList();
-            return new RolProcesoConsulta(rol, procesos);
-        });
+        // Una sola consulta agrupada para toda la pagina (sin una consulta de lanes por rol).
+        Map<Long, List<String>> procesosPorRol = laneService.procesosActivosPorRol(empresaId,
+                pagina.getContent().stream().map(RolProceso::getId).toList());
+        return pagina.map(rol -> new RolProcesoConsulta(rol, procesosPorRol.getOrDefault(rol.getId(), List.of())));
     }
 
     private void registrarCambioEnProcesos(Long empresaId, Long rolId, String descripcion) {
@@ -134,7 +141,7 @@ public class RolProcesoServiceImpl implements RolProcesoService {
     @Override
     public long contarUsos(Long empresaId, Long rolId) {
         obtener(empresaId, rolId);
-        return laneService.contarPorRolProceso(empresaId, rolId);
+        return laneService.procesosActivosPorRol(empresaId, List.of(rolId)).getOrDefault(rolId, List.of()).size();
     }
 
     @Transactional(readOnly = true)
@@ -185,9 +192,12 @@ public class RolProcesoServiceImpl implements RolProcesoService {
 
     @Transactional(readOnly = true)
     @Override
-    public PageResponse<RolProcesoConsultaResponse> consultarPagina(Long empresaId, String nombre, int pagina) {
+    public PageResponse<RolProcesoConsultaResponse> consultarPagina(Long empresaId, String nombre, int pagina,
+            Integer tamano) {
+        int tamanoEfectivo = tamano != null ? tamano : TAMANO_PAGINA;
+        Sort orden = Sort.by(Sort.Order.asc("nombre").ignoreCase(), Sort.Order.asc("id"));
         Page<RolProcesoConsultaResponse> page = buscarConProcesos(empresaId, nombre,
-                PageRequest.of(pagina, TAMANO_PAGINA))
+                PageRequest.of(pagina, tamanoEfectivo, orden))
                 .map(consulta -> modelMapper.map(consulta, RolProcesoConsultaResponse.class));
         return PageResponse.from(page);
     }

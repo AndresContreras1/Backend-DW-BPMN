@@ -7,12 +7,16 @@ import org.modelmapper.ModelMapper;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.context.event.EventListener;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.facimus.procesos.common.ReglaNegocioException;
 import com.facimus.procesos.common.RecursoNoEncontradoException;
+import com.facimus.procesos.common.event.PoolParticipanteModificadoEvent;
 import com.facimus.procesos.gestion.model.Proceso;
 import com.facimus.procesos.gestion.service.ProcesoService;
 import com.facimus.procesos.modelado.model.Actividad;
@@ -48,7 +52,7 @@ public class MensajeServiceImpl implements MensajeService {
     public Mensaje crear(Long empresaId, Long procesoId, String nombre, String contenido,
             Long poolOrigenId, Long poolDestinoId) {
         return crearInterno(empresaId, procesoId, nombre, contenido, poolOrigenId, poolDestinoId,
-                null, null, "idProceso", null, null, null, null,
+                null, null, null, null, null, null, null,
                 PoliticaMensajeSinCaso.DESCARTAR, false);
     }
 
@@ -85,14 +89,22 @@ public class MensajeServiceImpl implements MensajeService {
         if (exigirThrow && eventoThrow == null) {
             throw new ReglaNegocioException("El mensaje debe estar asociado a un evento Message Throw.");
         }
+        // La clave la define el cliente o se hereda del Message Throw; ya no se inventa un valor.
+        String correlacion = StringUtils.hasText(claveCorrelacion)
+                ? claveCorrelacion
+                : (eventoThrow != null && StringUtils.hasText(eventoThrow.getClaveCorrelacion())
+                        ? eventoThrow.getClaveCorrelacion()
+                        : null);
+        if (exigirThrow && correlacion == null) {
+            throw new ReglaNegocioException(
+                    "Debe indicar la clave de correlacion del mensaje o definirla en el Message Throw.");
+        }
         if (eventoThrow != null) {
-            validarThrow(eventoThrow, poolOrigen, nombre, claveCorrelacion);
+            validarThrow(eventoThrow, poolOrigen, nombre, correlacion);
         }
         if (eventoCatch != null) {
-            validarCatch(eventoCatch, poolDestino, nombre, claveCorrelacion);
+            validarCatch(eventoCatch, poolDestino, nombre, correlacion);
         }
-
-        String correlacion = StringUtils.hasText(claveCorrelacion) ? claveCorrelacion : "idProceso";
         Actividad actividadError = validarDestinoExterno(empresaId, procesoId, poolDestino, eventoCatch,
                 tipoDestinoExterno, destinoExterno, politicaFalloNotificacion, actividadErrorId);
         validarAmbiguedad(empresaId, procesoId, nombre, correlacion, null);
@@ -116,11 +128,13 @@ public class MensajeServiceImpl implements MensajeService {
                 : PoliticaMensajeSinCaso.DESCARTAR);
         mensaje = mensajeRepository.save(mensaje);
 
-        Correlacion entidadCorrelacion = new Correlacion();
-        entidadCorrelacion.setEmpresa(proceso.getEmpresa());
-        entidadCorrelacion.setMensaje(mensaje);
-        entidadCorrelacion.setCriterio(correlacion);
-        correlacionService.guardar(entidadCorrelacion);
+        if (correlacion != null) {
+            Correlacion entidadCorrelacion = new Correlacion();
+            entidadCorrelacion.setEmpresa(proceso.getEmpresa());
+            entidadCorrelacion.setMensaje(mensaje);
+            entidadCorrelacion.setCriterio(correlacion);
+            correlacionService.guardar(entidadCorrelacion);
+        }
 
         auditoriaModeladoService.registrar(proceso, "Mensaje creado: " + mensaje.getNombre() + ".");
         return mensaje;
@@ -155,7 +169,14 @@ public class MensajeServiceImpl implements MensajeService {
                 ? claveCorrelacion
                 : (StringUtils.hasText(mensaje.getClaveCorrelacion())
                         ? mensaje.getClaveCorrelacion()
-                        : "idProceso");
+                        : (mensaje.getEventoThrow() != null
+                                && StringUtils.hasText(mensaje.getEventoThrow().getClaveCorrelacion())
+                                ? mensaje.getEventoThrow().getClaveCorrelacion()
+                                : null));
+        if (correlacion == null && mensaje.getEventoThrow() != null) {
+            throw new ReglaNegocioException(
+                    "Debe indicar la clave de correlacion del mensaje o definirla en el Message Throw.");
+        }
 
         TipoDestinoExterno tipoDestinoEfectivo = tipoDestinoExterno != null
                 ? tipoDestinoExterno : mensaje.getTipoDestinoExterno();
@@ -191,15 +212,17 @@ public class MensajeServiceImpl implements MensajeService {
         mensaje.setPoliticaSinCaso(politicaSinCasoEfectiva);
         mensaje = mensajeRepository.save(mensaje);
 
-        Correlacion correlacionEntidad = correlacionService.buscarPorMensaje(empresaId, mensajeId)
-                .orElse(null);
-        if (correlacionEntidad == null) {
-            correlacionEntidad = new Correlacion();
-            correlacionEntidad.setEmpresa(mensaje.getEmpresa());
-            correlacionEntidad.setMensaje(mensaje);
+        if (correlacion != null) {
+            Correlacion correlacionEntidad = correlacionService.buscarPorMensaje(empresaId, mensajeId)
+                    .orElse(null);
+            if (correlacionEntidad == null) {
+                correlacionEntidad = new Correlacion();
+                correlacionEntidad.setEmpresa(mensaje.getEmpresa());
+                correlacionEntidad.setMensaje(mensaje);
+            }
+            correlacionEntidad.setCriterio(correlacion);
+            correlacionService.guardar(correlacionEntidad);
         }
-        correlacionEntidad.setCriterio(correlacion);
-        correlacionService.guardar(correlacionEntidad);
 
         auditoriaModeladoService.registrar(mensaje.getProceso(),
                 "Mensaje editado: " + mensaje.getNombre() + ".");
@@ -254,6 +277,32 @@ public class MensajeServiceImpl implements MensajeService {
     @Override
     public List<Mensaje> listarTodosPorProceso(Long empresaId, Long procesoId) {
         return mensajeRepository.findAllByProcesoIdAndEmpresaId(procesoId, empresaId);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<Mensaje> listarActivosPorEvento(Long empresaId, Long eventoId) {
+        return mensajeRepository.findActivosPorEvento(eventoId, empresaId);
+    }
+
+    /**
+     * Escucha PoolParticipanteModificadoEvent (publicado por PoolService.editar antes de guardar un
+     * cambio de tipo de participante o de caja negra) para impedir el cambio si el pool es el
+     * destino externo de mensajes activos, sin que PoolService dependa de MensajeService (ciclo).
+     */
+    @EventListener
+    public void alModificarParticipanteDePool(PoolParticipanteModificadoEvent evento) {
+        List<Mensaje> externos = mensajeRepository
+                .findAllByPoolDestinoIdAndEmpresaId(evento.poolId(), evento.empresaId()).stream()
+                .filter(Mensaje::isActivo)
+                .filter(m -> m.getTipoDestinoExterno() != null)
+                .toList();
+        if (!externos.isEmpty()) {
+            String nombres = externos.stream().map(m -> "\"" + m.getNombre() + "\"")
+                    .collect(java.util.stream.Collectors.joining(", "));
+            throw new ReglaNegocioException("No se puede cambiar el tipo de participante ni la caja negra del pool: "
+                    + "es el destino externo de los mensajes " + nombres + ".");
+        }
     }
 
     @Transactional(readOnly = true)
@@ -395,6 +444,10 @@ public class MensajeServiceImpl implements MensajeService {
                 && request.tipoDestinoExterno() == null && request.destinoExterno() == null
                 && request.politicaFalloNotificacion() == null && request.actividadErrorId() == null
                 && request.politicaSinCaso() == null;
+        if (!edicionLegacy && obtener(empresaId, mensajeId).getEventoThrow() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Los campos de correlacion, destino externo y politicas requieren que el mensaje tenga un Message Throw.");
+        }
         Mensaje mensaje = edicionLegacy
                 ? editar(empresaId, mensajeId, request.nombre(), request.contenido())
                 : editar(empresaId, mensajeId, request.nombre(), request.contenido(),
@@ -429,7 +482,7 @@ public class MensajeServiceImpl implements MensajeService {
                 .stream()
                 .filter(m -> mensajeActualId == null || !m.getId().equals(mensajeActualId))
                 .anyMatch(m -> m.getNombre().equalsIgnoreCase(nombre)
-                        && clave.equalsIgnoreCase(
+                        && (clave != null ? clave : "").equalsIgnoreCase(
                                 m.getClaveCorrelacion() != null ? m.getClaveCorrelacion() : ""));
         if (ambiguo) {
             throw new ReglaNegocioException(

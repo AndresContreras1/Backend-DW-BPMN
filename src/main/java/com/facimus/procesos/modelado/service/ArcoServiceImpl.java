@@ -168,16 +168,31 @@ public class ArcoServiceImpl implements ArcoService {
                         origen.getId(), destino.getId(), empresaId)) {
             throw new ReglaNegocioException("Ya existe un arco entre estos dos nodos.");
         }
-        if (origen instanceof Gateway gatewayOrigen
+        boolean origenAdmiteCondicion = origen instanceof Gateway gatewayOrigen
                 && (gatewayOrigen.getTipoGateway() == TipoGateway.EXCLUSIVO
-                        || gatewayOrigen.getTipoGateway() == TipoGateway.INCLUSIVO)
-                && !StringUtils.hasText(condicion)) {
-            throw new ReglaNegocioException("Un arco desde un gateway exclusivo o inclusivo requiere condicion.");
+                        || gatewayOrigen.getTipoGateway() == TipoGateway.INCLUSIVO);
+        if (origenAdmiteCondicion) {
+            // Un gateway de convergencia (2 o mas arcos entrantes) solo une ramas: su salida no decide nada.
+            if (!StringUtils.hasText(condicion) && !esConvergencia(empresaId, origen.getId())) {
+                throw new ReglaNegocioException(
+                        "Un arco desde un gateway exclusivo o inclusivo requiere condicion "
+                                + "(salvo que el gateway sea de convergencia, con 2 o mas arcos entrantes).");
+            }
+        } else if (StringUtils.hasText(condicion)) {
+            // Se rechaza (409) en vez de descartarla en silencio: la condicion solo tiene sentido en
+            // las salidas de un gateway exclusivo o inclusivo.
+            throw new ReglaNegocioException("Solo un arco que sale de un gateway exclusivo o inclusivo puede llevar "
+                    + "condicion; el nodo \"" + origen.getNombre() + "\" no la admite.");
         }
         if (destino instanceof EventoMensaje evento
                 && evento.getTipoEvento() == TipoEventoMensaje.CATCH_INICIO) {
             throw new ReglaNegocioException("Un Message Catch de inicio no puede tener arcos entrantes.");
         }
+    }
+
+    private boolean esConvergencia(Long empresaId, Long nodoId) {
+        return arcoRepository.findAllByDestinoIdAndEmpresaId(nodoId, empresaId).stream()
+                .filter(Arco::isActivo).count() >= 2;
     }
 
     private boolean esMismoArco(Long arcoId, Long empresaId, Long origenId, Long destinoId) {

@@ -28,6 +28,8 @@ import com.facimus.procesos.security.ApiPrincipal;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.ProblemDetail;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -56,16 +58,20 @@ public class RolProcesoController {
     }
 
     @GetMapping("/consulta")
-    @Operation(summary = "Buscar roles de proceso por nombre", description = "Version paginada, incluye en que procesos esta en uso cada rol.")
+    @Operation(summary = "Buscar roles de proceso por nombre", description = "Version paginada ordenada por nombre (tamano opcional de 1 a 100, 10 por defecto); incluye en que procesos activos esta en uso cada rol.")
     @ApiResponse(responseCode = "200", description = "Operacion exitosa.",
             content = @Content(schema = @Schema(implementation = PageResponse.class)))
+    @ApiResponse(responseCode = "400", description = "Pagina negativa o tamano fuera de 1..100.",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     @ApiResponse(responseCode = "401", description = "No autenticado: token ausente o invalido.",
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<PageResponse<RolProcesoConsultaResponse>> buscar(
             @RequestParam(required = false) String nombre,
-            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "0") @Min(value = 0, message = "La pagina no puede ser negativa.") int pagina,
+            @RequestParam(required = false) @Min(value = 1, message = "El tamano minimo es 1.")
+            @Max(value = 100, message = "El tamano maximo es 100.") Integer tamano,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        return ResponseEntity.ok(rolProcesoService.consultarPagina(principal.empresaId(), nombre, pagina));
+        return ResponseEntity.ok(rolProcesoService.consultarPagina(principal.empresaId(), nombre, pagina, tamano));
     }
 
     @PostMapping

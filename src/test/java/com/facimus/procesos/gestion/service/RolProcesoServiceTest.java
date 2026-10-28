@@ -101,7 +101,9 @@ class RolProcesoServiceTest {
         try {
             RolProceso resultado = rolProcesoService.editar(1L, 5L, "Analista Sr", "Senior");
             assertEquals("Analista Sr", resultado.getNombre());
-            verify(historialCambioService).registrar(eq(proceso), eq(usuario), contains("editado"));
+            verify(laneService).renombrarLanesDeRol(1L, 5L, "Analista Sr");
+            verify(historialCambioService).registrar(eq(proceso), eq(usuario),
+                    eq("Rol de proceso renombrado: \"Analista\" -> \"Analista Sr\"."));
         } finally {
             SecurityContextHolder.clearContext();
         }
@@ -110,7 +112,8 @@ class RolProcesoServiceTest {
     @Test
     void listar_con_uso_mapea_conteo_y_bandera() {
         when(rolProcesoRepository.findAllByEmpresaIdAndActivoTrue(1L)).thenReturn(List.of(rol));
-        when(laneService.contarPorRolProceso(1L, 5L)).thenReturn(2L);
+        when(laneService.procesosActivosPorRol(eq(1L), anyCollection()))
+                .thenReturn(java.util.Map.of(5L, List.of("Compras", "Ventas")));
 
         var resultado = rolProcesoService.listarConUso(1L);
 
@@ -121,17 +124,10 @@ class RolProcesoServiceTest {
 
     @Test
     void buscar_sin_nombre_usa_paginacion_y_lista_procesos() {
-        Proceso proceso = new Proceso();
-        proceso.setNombre("Compras");
-        Pool pool = new Pool();
-        pool.setProceso(proceso);
-        Lane lane = new Lane();
-        lane.setPool(pool);
-
         var pageable = PageRequest.of(0, 10);
         when(rolProcesoRepository.findAllByEmpresaIdAndActivoTrue(1L, pageable))
                 .thenReturn(new PageImpl<>(List.of(rol)));
-        when(laneService.listarPorRolProceso(1L, 5L)).thenReturn(List.of(lane));
+        when(laneService.procesosActivosPorRol(1L, List.of(5L))).thenReturn(java.util.Map.of(5L, List.of("Compras")));
 
         var resultado = rolProcesoService.buscarConProcesos(1L, " ", pageable);
 
@@ -143,7 +139,6 @@ class RolProcesoServiceTest {
         var pageable = PageRequest.of(0, 10);
         when(rolProcesoRepository.findAllByEmpresaIdAndActivoTrueAndNombreContainingIgnoreCase(
                 1L, "Ana", pageable)).thenReturn(new PageImpl<>(List.of(rol)));
-        when(laneService.listarPorRolProceso(1L, 5L)).thenReturn(List.of());
 
         var resultado = rolProcesoService.buscarConProcesos(1L, " Ana ", pageable);
 
@@ -153,7 +148,8 @@ class RolProcesoServiceTest {
     @Test
     void contar_usos_valida_rol_y_retorna_conteo() {
         when(rolProcesoRepository.findByIdAndEmpresaIdAndActivoTrue(5L, 1L)).thenReturn(Optional.of(rol));
-        when(laneService.contarPorRolProceso(1L, 5L)).thenReturn(3L);
+        when(laneService.procesosActivosPorRol(1L, List.of(5L)))
+                .thenReturn(java.util.Map.of(5L, List.of("A", "B", "C")));
 
         assertEquals(3L, rolProcesoService.contarUsos(1L, 5L));
     }
@@ -183,16 +179,11 @@ class RolProcesoServiceTest {
     @DisplayName("HU-19: eliminar rol en uso lanza excepcion (regla 13)")
     void eliminar_rol_en_uso() {
         when(rolProcesoRepository.findByIdAndEmpresaIdAndActivoTrue(5L, 1L)).thenReturn(Optional.of(rol));
-        Proceso proceso = new Proceso();
-        proceso.setNombre("Compras");
-        Pool pool = new Pool();
-        pool.setProceso(proceso);
-        Lane lane = new Lane();
-        lane.setPool(pool);
-        when(laneService.listarPorRolProceso(1L, 5L)).thenReturn(List.of(lane));
+        when(laneService.procesosActivosPorRol(1L, List.of(5L))).thenReturn(java.util.Map.of(5L, List.of("Compras")));
 
-        assertThrows(ReglaNegocioException.class,
+        var ex = assertThrows(ReglaNegocioException.class,
                 () -> rolProcesoService.eliminar(1L, 5L));
+        assertTrue(ex.getMessage().contains("Compras"));
 
         verify(rolProcesoRepository, never()).delete(any());
     }
@@ -201,12 +192,56 @@ class RolProcesoServiceTest {
     @DisplayName("HU-19: eliminar rol sin uso desactiva correctamente")
     void eliminar_rol_sin_uso() {
         when(rolProcesoRepository.findByIdAndEmpresaIdAndActivoTrue(5L, 1L)).thenReturn(Optional.of(rol));
-        when(laneService.listarPorRolProceso(1L, 5L)).thenReturn(Collections.emptyList());
         when(rolProcesoRepository.save(any(RolProceso.class))).thenAnswer(inv -> inv.getArgument(0));
 
         rolProcesoService.eliminar(1L, 5L);
 
         assertFalse(rol.isActivo());
         verify(rolProcesoRepository).save(rol);
+    }
+
+    @Test
+    @DisplayName("HU-19: las lanes de procesos inactivos no impiden dar de baja el rol")
+    void eliminar_rol_con_lanes_solo_en_procesos_inactivos_se_permite() {
+        when(rolProcesoRepository.findByIdAndEmpresaIdAndActivoTrue(5L, 1L)).thenReturn(Optional.of(rol));
+        // la consulta de uso ya filtra por proceso activo: un proceso dado de baja no aparece
+        when(laneService.procesosActivosPorRol(1L, List.of(5L))).thenReturn(java.util.Map.of());
+        when(rolProcesoRepository.save(any(RolProceso.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        rolProcesoService.eliminar(1L, 5L);
+
+        assertFalse(rol.isActivo());
+        verify(laneService, never()).listarPorRolProceso(anyLong(), anyLong());
+    }
+
+    @Test
+    void crear_recorta_el_nombre() {
+        when(rolProcesoRepository.findAllByEmpresaIdAndActivoTrue(1L)).thenReturn(Collections.emptyList());
+        when(empresaService.obtener(1L)).thenReturn(empresa);
+        when(rolProcesoRepository.save(any(RolProceso.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        RolProceso result = rolProcesoService.crear(1L, "  Auditor  ", "Revisa");
+
+        assertEquals("Auditor", result.getNombre());
+    }
+
+    @Test
+    void crear_nombre_duplicado_con_espacios_falla() {
+        when(rolProcesoRepository.findAllByEmpresaIdAndActivoTrue(1L)).thenReturn(List.of(rol));
+
+        assertThrows(ReglaNegocioException.class,
+                () -> rolProcesoService.crear(1L, "  analista ", "Duplicado"));
+    }
+
+    @Test
+    void editar_sin_cambiar_el_nombre_no_renombra_las_lanes() {
+        when(rolProcesoRepository.findByIdAndEmpresaIdAndActivoTrue(5L, 1L)).thenReturn(Optional.of(rol));
+        when(rolProcesoRepository.findAllByEmpresaIdAndActivoTrue(1L)).thenReturn(List.of(rol));
+        when(rolProcesoRepository.save(any(RolProceso.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        rolProcesoService.editar(1L, 5L, " Analista ", "Nueva descripcion");
+
+        assertEquals("Analista", rol.getNombre());
+        verify(laneService, never()).renombrarLanesDeRol(anyLong(), anyLong(), anyString());
     }
 }

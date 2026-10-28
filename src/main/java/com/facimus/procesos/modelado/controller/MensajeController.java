@@ -68,7 +68,8 @@ public class MensajeController {
     }
 
     @PostMapping("/procesos/{procesoId}/mensajes")
-    @Operation(summary = "Crear un mensaje entre dos pools", description = "Debe estar asociado a un evento Message Throw.")
+    @Operation(summary = "Crear un mensaje entre dos pools",
+            description = "Debe estar asociado a un evento Message Throw; sin eventoThrowId solo se admiten nombre, contenido y pools (los demas campos responden 400). destinoExterno es solo documentacion (max. 200 caracteres): no se guardan credenciales ni direcciones reales.")
     @ApiResponse(responseCode = "201", description = "Recurso creado.",
             content = @Content(schema = @Schema(implementation = MensajeResponse.class)))
     @ApiResponse(responseCode = "400", description = "Solicitud invalida (errores de validacion o JSON malformado).",

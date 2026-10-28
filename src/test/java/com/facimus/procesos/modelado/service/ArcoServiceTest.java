@@ -1,5 +1,6 @@
 package com.facimus.procesos.modelado.service;
 
+import com.facimus.procesos.modelado.model.NodoFlujo;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -407,5 +408,128 @@ class ArcoServiceTest {
 
         assertThrows(ReglaNegocioException.class,
                 () -> arcoService.editar(1L, 1L, "si", null, null, 10L));
+    }
+
+    // ---- condicion del arco segun el origen ----
+
+    private Gateway gatewayDe(Long id, TipoGateway tipo) {
+        Gateway g = new Gateway();
+        g.setId(id);
+        g.setNombre("G" + id);
+        g.setTipoGateway(tipo);
+        g.setLane(lane);
+        g.setEmpresa(empresa);
+        return g;
+    }
+
+    private void nodos(NodoFlujo origen, NodoFlujo destino) {
+        when(nodoFlujoService.obtener(1L, origen.getId())).thenReturn(origen);
+        when(nodoFlujoService.obtener(1L, destino.getId())).thenReturn(destino);
+    }
+
+    private Arco entranteActivo(boolean activo) {
+        Arco a = new Arco();
+        a.setActivo(activo);
+        return a;
+    }
+
+    @Test
+    void crear_desde_una_actividad_con_condicion_se_rechaza_y_no_guarda() {
+        nodos(nodoA, nodoB);
+
+        var ex = assertThrows(ReglaNegocioException.class,
+                () -> arcoService.crear(1L, 10L, 20L, "x", "monto > 5"));
+
+        assertTrue(ex.getMessage().contains("no la admite"));
+        verify(arcoRepository, never()).save(any());
+    }
+
+    @Test
+    void crear_desde_una_actividad_con_condicion_en_blanco_funciona() {
+        nodos(nodoA, nodoB);
+        when(arcoRepository.save(any(Arco.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Arco creado = arcoService.crear(1L, 10L, 20L, "x", "   ");
+
+        assertEquals(10L, creado.getOrigen().getId());
+    }
+
+    @Test
+    void crear_desde_gateway_paralelo_con_condicion_se_rechaza() {
+        Gateway paralelo = gatewayDe(40L, TipoGateway.PARALELO);
+        nodos(paralelo, nodoB);
+
+        assertThrows(ReglaNegocioException.class, () -> arcoService.crear(1L, 40L, 20L, "x", "a > b"));
+    }
+
+    @Test
+    void crear_desde_gateway_paralelo_sin_condicion_funciona() {
+        Gateway paralelo = gatewayDe(40L, TipoGateway.PARALELO);
+        nodos(paralelo, nodoB);
+        when(arcoRepository.save(any(Arco.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        assertNull(arcoService.crear(1L, 40L, 20L, "x", null).getCondicion());
+    }
+
+    @Test
+    void crear_desde_gateway_exclusivo_sin_condicion_y_sin_convergencia_falla() {
+        nodos(gatewayExclusivo, nodoB);
+        when(arcoRepository.findAllByDestinoIdAndEmpresaId(30L, 1L)).thenReturn(List.of(entranteActivo(true)));
+
+        var ex = assertThrows(ReglaNegocioException.class, () -> arcoService.crear(1L, 30L, 20L, "x", null));
+
+        assertTrue(ex.getMessage().contains("requiere condicion"));
+    }
+
+    @Test
+    void crear_desde_gateway_exclusivo_de_convergencia_sin_condicion_funciona() {
+        nodos(gatewayExclusivo, nodoB);
+        when(arcoRepository.findAllByDestinoIdAndEmpresaId(30L, 1L))
+                .thenReturn(List.of(entranteActivo(true), entranteActivo(true)));
+        when(arcoRepository.save(any(Arco.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        assertNull(arcoService.crear(1L, 30L, 20L, "x", null).getCondicion());
+    }
+
+    @Test
+    void crear_desde_gateway_exclusivo_los_arcos_entrantes_inactivos_no_cuentan_para_la_convergencia() {
+        nodos(gatewayExclusivo, nodoB);
+        when(arcoRepository.findAllByDestinoIdAndEmpresaId(30L, 1L))
+                .thenReturn(List.of(entranteActivo(true), entranteActivo(false)));
+
+        assertThrows(ReglaNegocioException.class, () -> arcoService.crear(1L, 30L, 20L, "x", null));
+    }
+
+    @Test
+    void crear_desde_gateway_exclusivo_con_condicion_funciona_sin_consultar_la_convergencia() {
+        nodos(gatewayExclusivo, nodoB);
+        when(arcoRepository.save(any(Arco.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        assertEquals("monto > 5", arcoService.crear(1L, 30L, 20L, "x", "monto > 5").getCondicion());
+        verify(arcoRepository, never()).findAllByDestinoIdAndEmpresaId(anyLong(), anyLong());
+    }
+
+    @Test
+    void editar_el_origen_hacia_un_gateway_paralelo_conservando_la_condicion_se_rechaza() {
+        Gateway paralelo = gatewayDe(40L, TipoGateway.PARALELO);
+        when(arcoRepository.findByIdAndEmpresaId(1L, 1L)).thenReturn(Optional.of(arco));
+        when(nodoFlujoService.obtener(1L, 40L)).thenReturn(paralelo);
+
+        assertThrows(ReglaNegocioException.class,
+                () -> arcoService.editar(1L, 1L, "x", "monto > 5", 40L, null));
+        verify(arcoRepository, never()).save(any());
+    }
+
+    @Test
+    void editar_el_origen_hacia_un_gateway_paralelo_sin_condicion_funciona() {
+        Gateway paralelo = gatewayDe(40L, TipoGateway.PARALELO);
+        when(arcoRepository.findByIdAndEmpresaId(1L, 1L)).thenReturn(Optional.of(arco));
+        when(nodoFlujoService.obtener(1L, 40L)).thenReturn(paralelo);
+        when(arcoRepository.save(any(Arco.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Arco editado = arcoService.editar(1L, 1L, "x", null, 40L, null);
+
+        assertSame(paralelo, editado.getOrigen());
+        assertNull(editado.getCondicion());
     }
 }

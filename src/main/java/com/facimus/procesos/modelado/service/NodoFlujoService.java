@@ -20,5 +20,8 @@ public interface NodoFlujoService {
 
     boolean existeNombreEnProceso(String nombre, Long procesoId, Long empresaId);
 
+    /** Nodos activos del proceso con ese nombre (sin distinguir mayusculas), de cualquier subtipo. */
+    List<NodoFlujo> listarActivosPorNombre(String nombre, Long procesoId, Long empresaId);
+
     NodoFlujo guardar(NodoFlujo nodo);
 }

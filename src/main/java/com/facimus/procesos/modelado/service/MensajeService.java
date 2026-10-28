@@ -34,6 +34,9 @@ public interface MensajeService {
 
     boolean tieneMensajesActivosEnPool(Long empresaId, Long poolId);
 
+    /** Mensajes activos que usan el evento como Message Throw o Message Catch. */
+    List<Mensaje> listarActivosPorEvento(Long empresaId, Long eventoId);
+
     MensajeResponse crear(Long empresaId, Long procesoId, MensajeRequest request);
 
     MensajeResponse editar(Long empresaId, Long mensajeId, EditarMensajeRequest request);

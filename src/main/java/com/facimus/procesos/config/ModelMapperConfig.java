@@ -42,6 +42,7 @@ import com.facimus.procesos.modelado.model.EventoMensaje;
 import com.facimus.procesos.modelado.model.Gateway;
 import com.facimus.procesos.modelado.model.Lane;
 import com.facimus.procesos.modelado.model.Mensaje;
+import com.facimus.procesos.modelado.model.NodoFlujo;
 import com.facimus.procesos.modelado.model.Pool;
 import com.facimus.procesos.modelado.model.TipoActividad;
 import com.facimus.procesos.modelado.service.dto.ImpactoEliminacion;
@@ -175,7 +176,9 @@ public class ModelMapperConfig {
             protected EventoMensajeResponse convert(EventoMensaje e) {
                 return new EventoMensajeResponse(e.getId(), e.getNombre(), e.getTipoEvento(),
                         e.getContenido(), e.getClaveCorrelacion(), e.getPosicionX(),
-                        e.getPosicionY(), e.getLane().getId(), e.isOrigenExterno());
+                        e.getPosicionY(), e.getLane().getId(), e.isOrigenExterno(),
+                        e.getActividades().stream().filter(NodoFlujo::isActivo).map(NodoFlujo::getId)
+                                .sorted().toList());
             }
         });
 

@@ -14,6 +14,9 @@ public interface GatewayService {
 
     Gateway editar(Long empresaId, Long gatewayId, String nombre, TipoGateway tipoGateway, int posX, int posY);
 
+    /** laneId: null = no mover el gateway de lane. */
+    Gateway editar(Long empresaId, Long gatewayId, String nombre, TipoGateway tipoGateway, int posX, int posY, Long laneId);
+
     ImpactoEliminacion evaluarImpactoEliminacion(Long empresaId, Long gatewayId);
 
     void eliminar(Long empresaId, Long gatewayId);

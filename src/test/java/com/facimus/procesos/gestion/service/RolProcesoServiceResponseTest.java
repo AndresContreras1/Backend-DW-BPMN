@@ -119,7 +119,7 @@ class RolProcesoServiceResponseTest {
         doReturn(new PageImpl<>(List.of(new RolProcesoConsulta(rol, List.of("Compras"))))).when(service)
                 .buscarConProcesos(eq(1L), eq("ana"), any(Pageable.class));
 
-        PageResponse<RolProcesoConsultaResponse> respuesta = service.consultarPagina(1L, "ana", 1);
+        PageResponse<RolProcesoConsultaResponse> respuesta = service.consultarPagina(1L, "ana", 1, null);
 
         assertThat(respuesta.content()).containsExactly(
                 new RolProcesoConsultaResponse(2L, "Analista", "Analiza", List.of("Compras"), true));
@@ -127,5 +127,19 @@ class RolProcesoServiceResponseTest {
         verify(service).buscarConProcesos(eq(1L), eq("ana"), captor.capture());
         assertThat(captor.getValue().getPageNumber()).isEqualTo(1);
         assertThat(captor.getValue().getPageSize()).isEqualTo(10);
+        assertThat(captor.getValue().getSort().getOrderFor("nombre").isIgnoreCase()).isTrue();
+        assertThat(captor.getValue().getSort().getOrderFor("id")).isNotNull();
+    }
+
+    @Test
+    void RolProcesoServiceImpl_consultarPagina_conTamano_usaEseTamano() {
+        doReturn(new PageImpl<>(List.of(new RolProcesoConsulta(rol, List.of())))).when(service)
+                .buscarConProcesos(eq(1L), eq(null), any(Pageable.class));
+
+        service.consultarPagina(1L, null, 0, 25);
+
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(service).buscarConProcesos(eq(1L), eq(null), captor.capture());
+        assertThat(captor.getValue().getPageSize()).isEqualTo(25);
     }
 }

@@ -5,6 +5,13 @@ import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import java.util.HashSet;
+import java.util.Set;
+import org.hibernate.annotations.BatchSize;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -30,4 +37,15 @@ public class EventoMensaje extends NodoFlujo {
 
     @Column(name = "origen_externo")
     private boolean origenExterno;
+
+    /**
+     * HU-27: actividades que utilizan los datos del mensaje recibido. Solo tiene sentido en los
+     * eventos CATCH; EventoMensajeService valida que sean del mismo proceso y empresa.
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "evento_mensaje_actividades",
+            joinColumns = @JoinColumn(name = "evento_id"),
+            inverseJoinColumns = @JoinColumn(name = "actividad_id"))
+    @BatchSize(size = 50)
+    private Set<Actividad> actividades = new HashSet<>();
 }

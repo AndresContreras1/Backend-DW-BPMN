@@ -275,7 +275,7 @@ class MensajeServiceTest {
         Mensaje existente = new Mensaje();
         existente.setId(90L);
         existente.setNombre("orden");
-        existente.setClaveCorrelacion("idProceso");
+        existente.setClaveCorrelacion(null);
         existente.setActivo(true);
 
         prepararCreacionBase();
@@ -352,7 +352,6 @@ class MensajeServiceTest {
 
         when(mensajeRepository.findByIdAndEmpresaId(1L, 1L)).thenReturn(Optional.of(mensaje));
         when(mensajeRepository.findAllByProcesoIdAndEmpresaIdAndActivoTrue(10L, 1L)).thenReturn(List.of());
-        when(correlacionService.buscarPorMensaje(1L, 1L)).thenReturn(Optional.empty());
         when(mensajeRepository.save(any(Mensaje.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Mensaje resultado = mensajeService.editar(
@@ -439,4 +438,143 @@ class MensajeServiceTest {
         return evento;
     }
 
+    // ---- correlacion: hereda la clave del Throw, ya no se inventa "idProceso" ----
+
+    private void prepararMensajeriaInterna(EventoMensaje throwEvt, EventoMensaje catchEvt) {
+        prepararCreacionBase();
+        when(nodoFlujoService.buscar(1L, 11L)).thenReturn(Optional.of(throwEvt));
+        if (catchEvt != null) {
+            when(nodoFlujoService.buscar(1L, 12L)).thenReturn(Optional.of(catchEvt));
+        }
+        when(mensajeRepository.save(any(Mensaje.class))).thenAnswer(inv -> inv.getArgument(0));
+    }
+
+    @Test
+    void crear_sin_clave_hereda_la_del_message_throw_y_guarda_la_correlacion() {
+        EventoMensaje throwEvt = evento(11L, TipoEventoMensaje.THROW, poolOrigen, "Orden", "pedidoId");
+        EventoMensaje catchEvt = evento(12L, TipoEventoMensaje.CATCH_INTERMEDIO, poolDestino, "Orden", "pedidoId");
+        prepararMensajeriaInterna(throwEvt, catchEvt);
+        when(correlacionService.guardar(any(Correlacion.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Mensaje resultado = mensajeService.crear(1L, 10L, "Orden", "Datos", 100L, 200L, 11L, 12L, null, null,
+                null, null, null, PoliticaMensajeSinCaso.DESCARTAR);
+
+        assertEquals("pedidoId", resultado.getClaveCorrelacion());
+        org.mockito.ArgumentCaptor<Correlacion> captor = org.mockito.ArgumentCaptor.forClass(Correlacion.class);
+        verify(correlacionService).guardar(captor.capture());
+        assertEquals("pedidoId", captor.getValue().getCriterio());
+    }
+
+    @Test
+    void crear_con_clave_en_blanco_tambien_hereda_la_del_throw() {
+        EventoMensaje throwEvt = evento(11L, TipoEventoMensaje.THROW, poolOrigen, "Orden", "pedidoId");
+        prepararMensajeriaInterna(throwEvt, null);
+        when(correlacionService.guardar(any(Correlacion.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Mensaje resultado = mensajeService.crear(1L, 10L, "Orden", "Datos", 100L, 200L, 11L, null, "  ", null,
+                null, null, null, PoliticaMensajeSinCaso.DESCARTAR);
+
+        assertEquals("pedidoId", resultado.getClaveCorrelacion());
+    }
+
+    @Test
+    void crear_sin_clave_y_con_un_throw_sin_clave_falla_con_409_claro() {
+        EventoMensaje throwEvt = evento(11L, TipoEventoMensaje.THROW, poolOrigen, "Orden", null);
+        prepararCreacionBase();
+        when(nodoFlujoService.buscar(1L, 11L)).thenReturn(Optional.of(throwEvt));
+
+        var ex = assertThrows(ReglaNegocioException.class, () ->
+                mensajeService.crear(1L, 10L, "Orden", "Datos", 100L, 200L, 11L, null, null, null, null, null, null,
+                        PoliticaMensajeSinCaso.DESCARTAR));
+
+        assertTrue(ex.getMessage().contains("clave de correlacion"));
+        verify(mensajeRepository, never()).save(any());
+    }
+
+    @Test
+    void crear_con_clave_distinta_a_la_del_catch_falla() {
+        EventoMensaje throwEvt = evento(11L, TipoEventoMensaje.THROW, poolOrigen, "Orden", "pedidoId");
+        EventoMensaje catchEvt = evento(12L, TipoEventoMensaje.CATCH_INTERMEDIO, poolDestino, "Orden", "otraClave");
+        prepararCreacionBase();
+        when(nodoFlujoService.buscar(1L, 11L)).thenReturn(Optional.of(throwEvt));
+        when(nodoFlujoService.buscar(1L, 12L)).thenReturn(Optional.of(catchEvt));
+
+        assertThrows(ReglaNegocioException.class, () ->
+                mensajeService.crear(1L, 10L, "Orden", "Datos", 100L, 200L, 11L, 12L, null, null, null, null, null,
+                        PoliticaMensajeSinCaso.DESCARTAR));
+    }
+
+    @Test
+    void crear_con_la_ruta_basica_ya_no_inventa_una_clave() {
+        prepararCreacionBase();
+        when(mensajeRepository.save(any(Mensaje.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Mensaje resultado = mensajeService.crear(1L, 10L, "Orden", "Datos", 100L, 200L);
+
+        assertNull(resultado.getClaveCorrelacion());
+        verify(correlacionService, never()).guardar(any());
+    }
+
+    @Test
+    void editar_sin_clave_en_el_mensaje_hereda_la_del_throw() {
+        EventoMensaje throwEvt = evento(11L, TipoEventoMensaje.THROW, poolOrigen, "Orden", "pedidoId");
+        mensaje.setEventoThrow(throwEvt);
+        mensaje.setClaveCorrelacion(null);
+        when(mensajeRepository.findByIdAndEmpresaId(1L, 1L)).thenReturn(Optional.of(mensaje));
+        when(mensajeRepository.save(any(Mensaje.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(correlacionService.buscarPorMensaje(1L, 1L)).thenReturn(Optional.empty());
+
+        Mensaje resultado = mensajeService.editar(1L, 1L, "Orden", "Datos", null, null, null, null, null, null, null);
+
+        assertEquals("pedidoId", resultado.getClaveCorrelacion());
+        verify(correlacionService).guardar(any(Correlacion.class));
+    }
+
+    @Test
+    void editar_con_throw_sin_clave_en_ninguna_parte_falla() {
+        mensaje.setEventoThrow(evento(11L, TipoEventoMensaje.THROW, poolOrigen, "Orden", null));
+        mensaje.setClaveCorrelacion(null);
+        when(mensajeRepository.findByIdAndEmpresaId(1L, 1L)).thenReturn(Optional.of(mensaje));
+
+        assertThrows(ReglaNegocioException.class,
+                () -> mensajeService.editar(1L, 1L, "Orden", "Datos", null, null, null, null, null, null, null));
+    }
+
+    // ---- pool destino externo ----
+
+    private Mensaje mensajeExterno(boolean activo, TipoDestinoExterno tipo) {
+        Mensaje m = new Mensaje();
+        m.setId(7L);
+        m.setNombre("Factura");
+        m.setActivo(activo);
+        m.setTipoDestinoExterno(tipo);
+        return m;
+    }
+
+    @Test
+    void cambiar_el_participante_de_un_pool_destino_externo_de_mensajes_activos_falla() {
+        when(mensajeRepository.findAllByPoolDestinoIdAndEmpresaId(200L, 1L))
+                .thenReturn(List.of(mensajeExterno(true, TipoDestinoExterno.CORREO)));
+
+        var ex = assertThrows(ReglaNegocioException.class, () -> mensajeService.alModificarParticipanteDePool(
+                new com.facimus.procesos.common.event.PoolParticipanteModificadoEvent(1L, 200L)));
+
+        assertTrue(ex.getMessage().contains("\"Factura\""));
+    }
+
+    @Test
+    void cambiar_el_participante_de_un_pool_sin_mensajes_externos_activos_se_permite() {
+        when(mensajeRepository.findAllByPoolDestinoIdAndEmpresaId(200L, 1L)).thenReturn(List.of(
+                mensajeExterno(false, TipoDestinoExterno.CORREO), mensajeExterno(true, null)));
+
+        assertDoesNotThrow(() -> mensajeService.alModificarParticipanteDePool(
+                new com.facimus.procesos.common.event.PoolParticipanteModificadoEvent(1L, 200L)));
+    }
+
+    @Test
+    void listarActivosPorEvento_consulta_con_la_empresa() {
+        when(mensajeRepository.findActivosPorEvento(5L, 1L)).thenReturn(List.of(mensaje));
+
+        assertEquals(List.of(mensaje), mensajeService.listarActivosPorEvento(1L, 5L));
+    }
 }
