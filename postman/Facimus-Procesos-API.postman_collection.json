@@ -1,71 +1,9 @@
 {
 	"info": {
-		"name": "Facimus Procesos - API REST",
-		"description": "Coleccion completa de la API REST del Sistema de Gestion y Modelado de Procesos BPMN multiempresa.\n\n**Flujo recomendado:**\n1. Registrar empresa (POST /api/v1/empresas)\n2. Iniciar sesion (POST /api/v1/auth/login) — el token JWT se guarda automaticamente\n3. Usar los demas endpoints (el header Authorization: Bearer se envia automaticamente)",
+		"name": "Facimus Procesos API",
+		"description": "Referencia de todos los endpoints de la API de modelado BPMN multiempresa. Las carpetas siguen el orden de uso y se pueden ejecutar de punta a punta con el runner. El primer login usa las variables email y password, cuyos valores por defecto son los datos de ejemplo del perfil de desarrollo (config/DatosDemoInitializer); no existen en producción. Los identificadores se guardan solos en variables de colección.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
-	"variable": [
-		{
-			"key": "baseUrl",
-			"value": "http://localhost:8080",
-			"type": "string"
-		},
-		{
-			"key": "empresaId",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "usuarioId",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "procesoId",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "rolId",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "poolId",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "laneId",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "actividadId",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "gatewayId",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "arcoId",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "mensajeId",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "token",
-			"value": "",
-			"type": "string"
-		}
-	],
 	"auth": {
 		"type": "bearer",
 		"bearer": [
@@ -76,34 +14,208 @@
 			}
 		]
 	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Sufijo único para nombres, NIT y correos que no pueden repetirse (se renueva en el primer paso de cada recorrido).",
+					"if (!pm.collectionVariables.get('runId')) {",
+					"  pm.collectionVariables.set('runId', Date.now().toString().slice(-9) + Math.floor(Math.random() * 100).toString().padStart(2, '0'));",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string",
+			"description": "URL base de la API."
+		},
+		{
+			"key": "email",
+			"value": "admin@demo.com",
+			"type": "string",
+			"description": "Correo para iniciar sesión. Valor por defecto: usuario de ejemplo del perfil de desarrollo (config/DatosDemoInitializer). Solo existe en el perfil por defecto, nunca en producción."
+		},
+		{
+			"key": "password",
+			"value": "Admin-Demo-2026",
+			"type": "string",
+			"description": "Contraseña del usuario anterior. Valor por defecto: dato de ejemplo del perfil de desarrollo; no usar fuera de él."
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string",
+			"description": "Se llena solo al iniciar sesión (accessToken). No guardar tokens reales."
+		},
+		{
+			"key": "rolAcceso",
+			"value": "EDITOR",
+			"type": "string"
+		},
+		{
+			"key": "runId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "nit",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "empresaId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "empresaRegistradaId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "empresaBId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "emailB",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "passwordB",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "usuarioId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "usuarioLectorId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "invitacionToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "emailInvitado",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "rolAId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "rolBId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "rolTempId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "procesoId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "poolId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "poolExternoId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "laneAId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "laneBId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "actividadAId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "actividadBId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "actividadCId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "gatewayId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "gatewayTempId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "arcoAId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "arcoBId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "arcoCId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "eventoThrowId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "eventoCatchId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "mensajeId",
+			"value": "",
+			"type": "string"
+		}
+	],
 	"item": [
 		{
-			"name": "Autenticacion",
-			"description": "Registro de empresa, login y logout. Estos endpoints son publicos.",
+			"name": "01 Autenticación",
 			"item": [
 				{
-					"name": "Registrar empresa",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"if (pm.response.code === 201) {",
-									"    var json = pm.response.json();",
-									"    pm.collectionVariables.set('empresaId', json.id);",
-									"    pm.test('Empresa creada', function () {",
-									"        pm.expect(json.id).to.be.above(0);",
-									"    });",
-									"}"
-								]
-							}
-						}
-					],
+					"name": "Iniciar sesión",
 					"request": {
-						"auth": {
-							"type": "noauth"
-						},
 						"method": "POST",
 						"header": [
 							{
@@ -111,83 +223,301 @@
 								"value": "application/json"
 							}
 						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"nombreEmpresa\": \"Acme Corp\",\n  \"nit\": \"900123456-1\",\n  \"correoContacto\": \"contacto@acme.com\",\n  \"nombreAdmin\": \"Administrador\",\n  \"emailAdmin\": \"admin@acme.com\",\n  \"passwordAdmin\": \"secret123\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/empresas",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "empresas"]
-						},
-						"description": "HU-01: Registra una nueva empresa con su administrador inicial. Endpoint publico."
-					},
-					"response": []
-				},
-				{
-					"name": "Iniciar sesion",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"if (pm.response.code === 200) {",
-									"    var json = pm.response.json();",
-									"    pm.collectionVariables.set('empresaId', json.empresaId);",
-									"    pm.collectionVariables.set('usuarioId', json.usuarioId);",
-									"    pm.collectionVariables.set('token', json.accessToken);",
-									"    pm.test('Login exitoso', function () {",
-									"        pm.expect(json.accessToken).to.not.be.empty;",
-									"    });",
-									"}"
-								]
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "noauth"
-						},
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"email\": \"admin@acme.com\",\n  \"password\": \"secret123\"\n}"
-						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/auth/login",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "auth", "login"]
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
 						},
-						"description": "HU-03: Inicia sesion. El token JWT se guarda automaticamente en la variable {{token}}."
+						"description": "Público. Devuelve accessToken (JWT); el script lo guarda en la variable token, que usan las demás requests como Bearer.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "noauth"
+						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Primer paso del recorrido: renueva el sufijo único.",
+									"pm.collectionVariables.set('runId', Date.now().toString().slice(-9) + Math.floor(Math.random() * 100).toString().padStart(2, '0'));"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('Devuelve accessToken', () => pm.expect(json.accessToken).to.be.a('string').and.not.empty);",
+									"pm.test('tokenType = Bearer', () => pm.expect(json.tokenType).to.eql(\"Bearer\"));",
+									"pm.test('expiresIn numérico', () => pm.expect(json.expiresIn).to.be.a('number'));",
+									"pm.test('Incluye el usuario', () => { pm.expect(json.usuario.email).to.be.a('string'); pm.expect(json.usuario.rolAcceso).to.be.a('string'); });",
+									"pm.collectionVariables.set('token', json.accessToken);"
+								]
+							}
+						}
+					]
 				},
 				{
-					"name": "Cerrar sesion",
+					"name": "Iniciar sesión con clave incorrecta (falla)",
 					"request": {
 						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"clave-incorrecta\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 401', () => pm.response.to.have.status(401));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Consultar sin token (falla)",
+					"request": {
+						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/auth/logout",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "auth", "logout"]
+							"raw": "{{baseUrl}}/api/v1/procesos",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos"
+							]
 						},
-						"description": "HU-03: Cierra la sesion activa."
+						"description": "Un endpoint protegido sin Authorization responde 401.",
+						"auth": {
+							"type": "noauth"
+						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 401', () => pm.response.to.have.status(401));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Registrar empresa (con su administrador)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/empresas",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"empresas"
+							]
+						},
+						"description": "Público. Crea la empresa y su primer administrador. La contraseña mínima es de 8 caracteres. No cambia la sesión actual.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombreEmpresa\": \"Empresa de pruebas {{runId}}\",\n  \"nit\": \"{{nit}}\",\n  \"correoContacto\": \"contacto.{{runId}}@ejemplo.test\",\n  \"nombreAdmin\": \"Administrador de pruebas\",\n  \"emailAdmin\": \"admin.{{runId}}@ejemplo.test\",\n  \"passwordAdmin\": \"Clave-Prueba-2026\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.collectionVariables.set('nit', 'NIT-' + pm.collectionVariables.get('runId'));"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('id es numérico', () => pm.expect(json.id).to.be.a('number'));",
+									"pm.test('NIT devuelto', () => pm.expect(json.nit).to.eql(pm.collectionVariables.get('nit')));",
+									"pm.test('Tiene fechaRegistro', () => pm.expect(json.fechaRegistro).to.be.a('string'));",
+									"pm.collectionVariables.set('empresaRegistradaId', pm.response.json().id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Registrar con NIT repetido (falla)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/empresas",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"empresas"
+							]
+						},
+						"description": "Regla de negocio: el NIT no puede repetirse.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombreEmpresa\": \"Empresa repetida\",\n  \"nit\": \"{{nit}}\",\n  \"correoContacto\": \"otra.{{runId}}@ejemplo.test\",\n  \"nombreAdmin\": \"Otro administrador\",\n  \"emailAdmin\": \"otro.{{runId}}@ejemplo.test\",\n  \"passwordAdmin\": \"Clave-Prueba-2026\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 409', () => pm.response.to.have.status(409));",
+									"pm.test('Error con detalle', () => pm.expect(pm.response.json().detail).to.be.a('string'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Registrar con contraseña corta (falla)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/empresas",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"empresas"
+							]
+						},
+						"description": "La contraseña del administrador exige mínimo 8 caracteres.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombreEmpresa\": \"Empresa clave corta\",\n  \"nit\": \"NIT-corta-{{runId}}\",\n  \"correoContacto\": \"corta.{{runId}}@ejemplo.test\",\n  \"nombreAdmin\": \"Administrador\",\n  \"emailAdmin\": \"corta.{{runId}}@ejemplo.test\",\n  \"passwordAdmin\": \"corta\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 400', () => pm.response.to.have.status(400));"
+								]
+							}
+						}
+					]
 				}
 			]
 		},
 		{
-			"name": "Usuarios",
-			"description": "CRUD de colaboradores de la empresa. Requiere rol ADMINISTRADOR para crear, editar rol y eliminar.",
+			"name": "02 Usuarios",
+			"description": "Solo el administrador gestiona usuarios.",
 			"item": [
 				{
 					"name": "Listar usuarios",
@@ -195,30 +525,39 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/usuarios",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "usuarios"]
+							"raw": "{{baseUrl}}/api/v1/usuarios?activo=true",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"usuarios"
+							],
+							"query": [
+								{
+									"key": "activo",
+									"value": "true"
+								}
+							]
 						},
-						"description": "HU-02: Lista todos los usuarios de la empresa. Solo administrador."
+						"description": "Solo administrador. El parámetro activo es opcional."
 					},
-					"response": []
-				},
-				{
-					"name": "Crear usuario",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"if (pm.response.code === 201) {",
-									"    var json = pm.response.json();",
-									"    pm.collectionVariables.set('usuarioId', json.id);",
-									"}"
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"pm.test('La respuesta es una lista', () => pm.expect(pm.response.json()).to.be.an('array'));"
 								]
 							}
 						}
-					],
+					]
+				},
+				{
+					"name": "Crear usuario editor",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -227,18 +566,86 @@
 								"value": "application/json"
 							}
 						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Juan Editor\",\n  \"email\": \"juan@acme.com\",\n  \"password\": \"secret123\",\n  \"rolAcceso\": \"EDITOR\"\n}"
-						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/usuarios",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "usuarios"]
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"usuarios"
+							]
 						},
-						"description": "HU-02: Crea un colaborador. Solo administrador. Roles: ADMINISTRADOR, EDITOR, SOLO_LECTURA."
+						"description": "Solo administrador. rolAcceso: ADMINISTRADOR, EDITOR o SOLO_LECTURA. La contraseña mínima es de 8 caracteres.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Editor de pruebas\",\n  \"email\": \"editor.{{runId}}@ejemplo.test\",\n  \"password\": \"Clave-Editor-2026\",\n  \"rolAcceso\": \"EDITOR\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('rolAcceso = EDITOR', () => pm.expect(json.rolAcceso).to.eql(\"EDITOR\"));",
+									"pm.test('activo = true', () => pm.expect(json.activo).to.eql(true));",
+									"pm.collectionVariables.set('usuarioId', pm.response.json().id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Crear usuario con contraseña corta (falla)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/usuarios",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"usuarios"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Usuario clave corta\",\n  \"email\": \"corta.{{runId}}@ejemplo.test\",\n  \"password\": \"corta\",\n  \"rolAcceso\": \"EDITOR\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 400', () => pm.response.to.have.status(400));"
+								]
+							}
+						}
+					]
 				},
 				{
 					"name": "Obtener usuario",
@@ -247,15 +654,34 @@
 						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/usuarios/{{usuarioId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "usuarios", "{{usuarioId}}"]
-						},
-						"description": "Obtiene los datos de un usuario por su ID."
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"usuarios",
+								"{{usuarioId}}"
+							]
+						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('rolAcceso = EDITOR', () => pm.expect(json.rolAcceso).to.eql(\"EDITOR\"));",
+									"pm.test('Tiene email', () => pm.expect(json.email).to.be.a('string'));"
+								]
+							}
+						}
+					]
 				},
 				{
-					"name": "Actualizar rol o estado de usuario",
+					"name": "Actualizar el rol de un usuario",
 					"request": {
 						"method": "PATCH",
 						"header": [
@@ -264,75 +690,89 @@
 								"value": "application/json"
 							}
 						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"rolAcceso\": \"ADMINISTRADOR\",\n  \"activo\": true\n}"
-						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/usuarios/{{usuarioId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "usuarios", "{{usuarioId}}"]
-						},
-						"description": "HU-02: Actualiza el rol y/o estado activo de un usuario. Solo administrador."
-					},
-					"response": []
-				},
-				{
-					"name": "Desactivar usuario",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/usuarios/{{usuarioId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "usuarios", "{{usuarioId}}"]
-						},
-						"description": "HU-02: Desactiva (eliminacion logica) un usuario. Solo administrador."
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Procesos",
-			"description": "CRUD de procesos BPMN. Requiere rol EDITOR o ADMINISTRADOR para crear/editar/publicar. Solo ADMINISTRADOR puede eliminar.",
-			"item": [
-				{
-					"name": "Listar procesos",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/procesos?pagina=0",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "procesos"],
-							"query": [
-								{ "key": "pagina", "value": "0" },
-								{ "key": "nombre", "value": "", "disabled": true },
-								{ "key": "estado", "value": "BORRADOR", "disabled": true },
-								{ "key": "categoria", "value": "", "disabled": true }
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"usuarios",
+								"{{usuarioId}}"
 							]
 						},
-						"description": "HU-07: Lista procesos con filtros opcionales (nombre, estado, categoria) y paginacion."
+						"description": "Cuerpo con rolAcceso y/o activo; debe enviarse al menos uno.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"rolAcceso\": \"SOLO_LECTURA\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
 					},
-					"response": []
-				},
-				{
-					"name": "Crear proceso",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"if (pm.response.code === 201) {",
-									"    var json = pm.response.json();",
-									"    pm.collectionVariables.set('procesoId', json.id);",
-									"}"
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('rolAcceso = SOLO_LECTURA', () => pm.expect(json.rolAcceso).to.eql(\"SOLO_LECTURA\"));"
 								]
 							}
 						}
-					],
+					]
+				},
+				{
+					"name": "Actualizar usuario sin campos (falla)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/usuarios/{{usuarioId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"usuarios",
+								"{{usuarioId}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 400', () => pm.response.to.have.status(400));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Invitar a un colaborador",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -341,49 +781,209 @@
 								"value": "application/json"
 							}
 						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/usuarios/invitaciones",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"usuarios",
+								"invitaciones"
+							]
+						},
+						"description": "Solo administrador. Devuelve el token de un solo uso que se acepta en el siguiente paso.",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Proceso de Ventas\",\n  \"descripcion\": \"Flujo completo del proceso de ventas B2B\",\n  \"categoria\": \"Comercial\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/procesos",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "procesos"]
-						},
-						"description": "HU-04: Crea un nuevo proceso en estado BORRADOR. Requiere EDITOR o ADMINISTRADOR."
+							"raw": "{\n  \"email\": \"{{emailInvitado}}\",\n  \"rolAcceso\": \"EDITOR\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.collectionVariables.set('emailInvitado', 'invitado.' + pm.collectionVariables.get('runId') + '@ejemplo.test');"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('Devuelve token y expiración', () => { pm.expect(json.token).to.be.a('string'); pm.expect(json.fechaExpiracion).to.be.a('string'); });",
+									"pm.collectionVariables.set('invitacionToken', json.token);"
+								]
+							}
+						}
+					]
 				},
 				{
-					"name": "Detalle del proceso",
+					"name": "Aceptar la invitación",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/usuarios/invitaciones/{{invitacionToken}}/aceptar",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"usuarios",
+								"invitaciones",
+								"{{invitacionToken}}",
+								"aceptar"
+							]
+						},
+						"description": "Público: crea la cuenta con el token recibido. La contraseña mínima es de 8 caracteres.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Colaborador invitado\",\n  \"password\": \"Clave-Invitado-2026\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('rolAcceso = EDITOR', () => pm.expect(json.rolAcceso).to.eql(\"EDITOR\"));",
+									"pm.test('Correo de la invitación', () => pm.expect(json.email).to.eql(pm.collectionVariables.get('emailInvitado')));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Desactivar usuario (DELETE)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/usuarios/{{usuarioId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"usuarios",
+								"{{usuarioId}}"
+							]
+						},
+						"description": "Baja lógica del colaborador."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "03 Permisos de estructura",
+			"item": [
+				{
+					"name": "Consultar los permisos configurados",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "procesos", "{{procesoId}}"]
+							"raw": "{{baseUrl}}/api/v1/permisos-estructura",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"permisos-estructura"
+							]
 						},
-						"description": "HU-07: Obtiene el detalle del proceso activo."
+						"description": "Solo administrador: permisos por rol de acceso."
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"pm.test('La respuesta es una lista', () => pm.expect(pm.response.json()).to.be.an('array'));"
+								]
+							}
+						}
+					]
 				},
 				{
-					"name": "Historial del proceso",
+					"name": "Consultar los permisos del propio rol",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/historial",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "procesos", "{{procesoId}}", "historial"]
+							"raw": "{{baseUrl}}/api/v1/permisos-estructura/mio",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"permisos-estructura",
+								"mio"
+							]
 						},
-						"description": "Consulta la trazabilidad del proceso, validando tenant y proceso activo."
+						"description": "Cualquier usuario autenticado; sirve para ocultar botones que el rol no puede usar."
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('Permisos booleanos', () => ['crearPool','editarPool','eliminarPool','crearLane','editarLane','eliminarLane'].forEach(k => pm.expect(json[k]).to.be.a('boolean')));",
+									"pm.test('Indica el rol de acceso', () => pm.expect(json.rolAcceso).to.be.a('string'));"
+								]
+							}
+						}
+					]
 				},
 				{
-					"name": "Editar proceso",
+					"name": "Actualizar los permisos de un rol",
 					"request": {
 						"method": "PUT",
 						"header": [
@@ -392,92 +992,130 @@
 								"value": "application/json"
 							}
 						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/permisos-estructura/{{rolAcceso}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"permisos-estructura",
+								"{{rolAcceso}}"
+							]
+						},
+						"description": "Solo administrador. El segmento final es la variable rolAcceso (EDITOR o SOLO_LECTURA).",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Proceso de Ventas v2\",\n  \"descripcion\": \"Flujo actualizado\",\n  \"categoria\": \"Comercial\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "procesos", "{{procesoId}}"]
-						},
-						"description": "HU-05: Edita un proceso existente. Requiere EDITOR o ADMINISTRADOR."
-					},
-					"response": []
-				},
-				{
-					"name": "Publicar proceso",
-					"request": {
-						"method": "PATCH",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
+							"raw": "{\n  \"crearPool\": true,\n  \"editarPool\": true,\n  \"eliminarPool\": false,\n  \"crearLane\": true,\n  \"editarLane\": true,\n  \"eliminarLane\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
 							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"estado\": \"PUBLICADO\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "procesos", "{{procesoId}}"]
-						},
-						"description": "HU-05: Publica el proceso mediante PATCH con estado=PUBLICADO. Requiere EDITOR o ADMINISTRADOR."
+						}
 					},
-					"response": []
-				},
-				{
-					"name": "Eliminar proceso",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "procesos", "{{procesoId}}"]
-						},
-						"description": "HU-06: Eliminacion logica del proceso. Solo ADMINISTRADOR."
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Roles de Proceso",
-			"description": "CRUD de roles de proceso (Analista, Supervisor, etc.). Se usan para nombrar Lanes. Solo ADMINISTRADOR puede crear/editar/eliminar.",
-			"item": [
-				{
-					"name": "Listar roles",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/roles",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "roles"]
-						},
-						"description": "HU-20: Lista todos los roles con informacion de uso."
-					},
-					"response": []
-				},
-				{
-					"name": "Crear rol",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"if (pm.response.code === 201) {",
-									"    var json = pm.response.json();",
-									"    pm.collectionVariables.set('rolId', json.id);",
-									"}"
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('rolAcceso = EDITOR', () => pm.expect(json.rolAcceso).to.eql(\"EDITOR\"));",
+									"pm.test('crearPool = true', () => pm.expect(json.crearPool).to.eql(true));",
+									"pm.test('eliminarPool = false', () => pm.expect(json.eliminarPool).to.eql(false));"
 								]
 							}
 						}
-					],
+					]
+				}
+			]
+		},
+		{
+			"name": "04 Roles de proceso",
+			"item": [
+				{
+					"name": "Listar roles de proceso",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"roles"
+							]
+						},
+						"description": "Solo administrador. Incluye en qué procesos activos se usa cada rol."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"pm.test('La respuesta es una lista', () => pm.expect(pm.response.json()).to.be.an('array'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Buscar roles con paginación",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles/consulta?nombre=Analista&pagina=0&tamano=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"roles",
+								"consulta"
+							],
+							"query": [
+								{
+									"key": "nombre",
+									"value": "Analista",
+									"disabled": true
+								},
+								{
+									"key": "pagina",
+									"value": "0"
+								},
+								{
+									"key": "tamano",
+									"value": "10"
+								}
+							]
+						},
+						"description": "nombre es opcional; pagina desde 0; tamano de 1 a 100 (10 por defecto)."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"pm.test('Respuesta paginada', () => { const j = pm.response.json(); pm.expect(j.content).to.be.an('array'); pm.expect(j).to.have.keys('content', 'page', 'size', 'totalElements', 'totalPages'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Crear rol Analista",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -486,18 +1124,133 @@
 								"value": "application/json"
 							}
 						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Analista\",\n  \"descripcion\": \"Responsable del analisis de procesos\"\n}"
-						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/roles",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "roles"]
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"roles"
+							]
 						},
-						"description": "HU-17: Crea un nuevo rol de proceso. Solo ADMINISTRADOR."
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Analista {{runId}}\",\n  \"descripcion\": \"Quien recibe y registra las solicitudes\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('id es numérico', () => pm.expect(json.id).to.be.a('number'));",
+									"pm.collectionVariables.set('rolAId', pm.response.json().id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Crear rol Gerente",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"roles"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Gerente {{runId}}\",\n  \"descripcion\": \"Quien aprueba o rechaza\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('id es numérico', () => pm.expect(json.id).to.be.a('number'));",
+									"pm.collectionVariables.set('rolBId', pm.response.json().id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Crear rol temporal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"roles"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Temporal {{runId}}\",\n  \"descripcion\": \"Rol para probar la edición y la baja\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('id es numérico', () => pm.expect(json.id).to.be.a('number'));",
+									"pm.collectionVariables.set('rolTempId', pm.response.json().id);"
+								]
+							}
+						}
+					]
 				},
 				{
 					"name": "Obtener rol",
@@ -505,13 +1258,32 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/roles/{{rolId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "roles", "{{rolId}}"]
-						},
-						"description": "Obtiene un rol de proceso por su ID."
+							"raw": "{{baseUrl}}/api/v1/roles/{{rolAId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"roles",
+								"{{rolAId}}"
+							]
+						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('id es numérico', () => pm.expect(json.id).to.be.a('number'));",
+									"pm.test('Tiene nombre', () => pm.expect(json.nombre).to.be.a('string'));"
+								]
+							}
+						}
+					]
 				},
 				{
 					"name": "Editar rol",
@@ -523,83 +1295,174 @@
 								"value": "application/json"
 							}
 						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles/{{rolTempId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"roles",
+								"{{rolTempId}}"
+							]
+						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Analista Senior\",\n  \"descripcion\": \"Analista con experiencia\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/roles/{{rolId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "roles", "{{rolId}}"]
-						},
-						"description": "HU-18: Edita un rol existente. Solo ADMINISTRADOR."
+							"raw": "{\n  \"nombre\": \"Temporal editado {{runId}}\",\n  \"descripcion\": \"Descripción editada\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
 					},
-					"response": []
-				},
-				{
-					"name": "Eliminar rol",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/roles/{{rolId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "roles", "{{rolId}}"]
-						},
-						"description": "HU-19: Elimina un rol de proceso. Solo ADMINISTRADOR. Falla si el rol esta en uso."
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Pools",
-			"description": "Participantes del proceso BPMN (empresa, cliente, proveedor, sistema externo).",
-			"item": [
-				{
-					"name": "Listar pools del proceso",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/pools",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "procesos", "{{procesoId}}", "pools"]
-						},
-						"description": "HU-23: Lista todos los pools de un proceso."
-					},
-					"response": []
-				},
-				{
-					"name": "Obtener pool",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/pools/{{poolId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "pools", "{{poolId}}"]
-						},
-						"description": "Obtiene un pool por su ID."
-					},
-					"response": []
-				},
-				{
-					"name": "Crear pool",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"if (pm.response.code === 201) {",
-									"    var json = pm.response.json();",
-									"    pm.collectionVariables.set('poolId', json.id);",
-									"}"
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('Nombre actualizado', () => pm.expect(json.nombre).to.include('Temporal editado'));"
 								]
 							}
 						}
-					],
+					]
+				},
+				{
+					"name": "Eliminar rol sin uso",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles/{{rolTempId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"roles",
+								"{{rolTempId}}"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "05 Procesos",
+			"item": [
+				{
+					"name": "Buscar procesos con filtros y paginación",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos?nombre=Solicitud&estado=BORRADOR&categoria=Talento Humano&activo=true&pagina=0&tamano=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos"
+							],
+							"query": [
+								{
+									"key": "nombre",
+									"value": "Solicitud",
+									"disabled": true
+								},
+								{
+									"key": "estado",
+									"value": "BORRADOR",
+									"disabled": true
+								},
+								{
+									"key": "categoria",
+									"value": "Talento Humano",
+									"disabled": true
+								},
+								{
+									"key": "activo",
+									"value": "true"
+								},
+								{
+									"key": "pagina",
+									"value": "0"
+								},
+								{
+									"key": "tamano",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Filtros opcionales: nombre, estado (BORRADOR o PUBLICADO), categoria y activo. pagina desde 0; tamano de 1 a 100 (10 por defecto)."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"pm.test('Respuesta paginada', () => { const j = pm.response.json(); pm.expect(j.content).to.be.an('array'); pm.expect(j).to.have.keys('content', 'page', 'size', 'totalElements', 'totalPages'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Tamaño de página fuera de rango (falla)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos?tamano=0",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos"
+							],
+							"query": [
+								{
+									"key": "tamano",
+									"value": "0"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 400', () => pm.response.to.have.status(400));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Crear proceso",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -608,21 +1471,121 @@
 								"value": "application/json"
 							}
 						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos"
+							]
+						},
+						"description": "Nace en BORRADOR con su pool inicial (la propia empresa). El nombre no puede repetirse entre procesos activos.",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Departamento Comercial\",\n  \"tipoParticipante\": \"EMPRESA\",\n  \"cajaNegra\": false\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/pools",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "procesos", "{{procesoId}}", "pools"]
-						},
-						"description": "HU-21: Crea un pool. Tipos: EMPRESA, CLIENTE, PROVEEDOR, SISTEMA_EXTERNO."
+							"raw": "{\n  \"nombre\": \"Solicitud de vacaciones {{runId}}\",\n  \"descripcion\": \"Gestión de las solicitudes de vacaciones del personal\",\n  \"categoria\": \"Talento Humano\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('estado = BORRADOR', () => pm.expect(json.estado).to.eql(\"BORRADOR\"));",
+									"pm.test('activo = true', () => pm.expect(json.activo).to.eql(true));",
+									"pm.collectionVariables.set('procesoId', pm.response.json().id);"
+								]
+							}
+						}
+					]
 				},
 				{
-					"name": "Editar pool",
+					"name": "Crear proceso sin nombre (falla)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"\",\n  \"descripcion\": \"Sin nombre\",\n  \"categoria\": \"Pruebas\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 400', () => pm.response.to.have.status(400));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Ver el detalle del proceso",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos",
+								"{{procesoId}}"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('Trae proceso e historial', () => { pm.expect(json.proceso.id).to.eql(Number(pm.collectionVariables.get('procesoId'))); pm.expect(json.historial).to.be.an('array'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Editar los datos del proceso",
 					"request": {
 						"method": "PUT",
 						"header": [
@@ -631,83 +1594,119 @@
 								"value": "application/json"
 							}
 						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos",
+								"{{procesoId}}"
+							]
+						},
+						"description": "No cambia el estado; para eso se usa PATCH.",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Departamento Comercial v2\",\n  \"tipoParticipante\": \"EMPRESA\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/pools/{{poolId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "pools", "{{poolId}}"]
-						},
-						"description": "Edita el nombre y tipo de participante de un pool."
+							"raw": "{\n  \"nombre\": \"Solicitud de vacaciones {{runId}}\",\n  \"descripcion\": \"Descripción actualizada del proceso\",\n  \"categoria\": \"Talento Humano\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
 					},
-					"response": []
-				},
-				{
-					"name": "Eliminar pool",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/pools/{{poolId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "pools", "{{poolId}}"]
-						},
-						"description": "Elimina un pool y sus lanes asociados."
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Lanes",
-			"description": "Divisiones internas de un pool. Cada lane se asocia a un rol de proceso.",
-			"item": [
-				{
-					"name": "Listar lanes del pool",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/pools/{{poolId}}/lanes",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "pools", "{{poolId}}", "lanes"]
-						},
-						"description": "HU-24: Lista las lanes de un pool."
-					},
-					"response": []
-				},
-				{
-					"name": "Obtener lane",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/lanes/{{laneId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "lanes", "{{laneId}}"]
-						},
-						"description": "Obtiene una lane por su ID."
-					},
-					"response": []
-				},
-				{
-					"name": "Crear lane",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"if (pm.response.code === 201) {",
-									"    var json = pm.response.json();",
-									"    pm.collectionVariables.set('laneId', json.id);",
-									"}"
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('Descripción actualizada', () => pm.expect(json.descripcion).to.include('actualizada'));"
 								]
 							}
 						}
-					],
+					]
+				},
+				{
+					"name": "Consultar el historial de cambios",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/historial",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos",
+								"{{procesoId}}",
+								"historial"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"pm.test('Historial con registros', () => pm.expect(pm.response.json()).to.be.an('array').and.not.empty);"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "06 Pools",
+			"item": [
+				{
+					"name": "Listar los pools del proceso",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/pools",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos",
+								"{{procesoId}}",
+								"pools"
+							]
+						},
+						"description": "El pool inicial de tipo EMPRESA se crea con el proceso; el script guarda su id en poolId."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('Es una lista', () => pm.expect(json).to.be.an('array'));",
+									"const empresa = json.find(p => p.tipoParticipante === 'EMPRESA');",
+									"pm.test('Existe el pool EMPRESA inicial', () => pm.expect(empresa).to.exist);",
+									"pm.collectionVariables.set('poolId', empresa.id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Crear pool de sistema externo (caja negra)",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -716,18 +1715,339 @@
 								"value": "application/json"
 							}
 						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/pools",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos",
+								"{{procesoId}}",
+								"pools"
+							]
+						},
+						"description": "tipoParticipante: EMPRESA, CLIENTE, PROVEEDOR o SISTEMA_EXTERNO. Un pool de caja negra no admite lanes ni elementos internos.",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Recepcion de solicitudes\",\n  \"rolProcesoId\": {{rolId}}\n}"
+							"raw": "{\n  \"nombre\": \"Sistema de nómina\",\n  \"tipoParticipante\": \"SISTEMA_EXTERNO\",\n  \"cajaNegra\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('cajaNegra = true', () => pm.expect(json.cajaNegra).to.eql(true));",
+									"pm.test('tipoParticipante = SISTEMA_EXTERNO', () => pm.expect(json.tipoParticipante).to.eql(\"SISTEMA_EXTERNO\"));",
+									"pm.collectionVariables.set('poolExternoId', pm.response.json().id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Obtener pool",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pools/{{poolId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"pools",
+								"{{poolId}}"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('tipoParticipante = EMPRESA', () => pm.expect(json.tipoParticipante).to.eql(\"EMPRESA\"));",
+									"pm.test('Pertenece al proceso', () => pm.expect(json.procesoId).to.eql(Number(pm.collectionVariables.get('procesoId'))));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Editar el pool de la empresa",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pools/{{poolId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"pools",
+								"{{poolId}}"
+							]
 						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Departamento de Talento Humano\",\n  \"tipoParticipante\": \"EMPRESA\",\n  \"cajaNegra\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('nombre = Departamento de Talento Humano', () => pm.expect(json.nombre).to.eql(\"Departamento de Talento Humano\"));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "07 Lanes",
+			"item": [
+				{
+					"name": "Crear lane de recepción",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/pools/{{poolId}}/lanes",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "pools", "{{poolId}}", "lanes"]
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"pools",
+								"{{poolId}}",
+								"lanes"
+							]
 						},
-						"description": "HU-22: Crea una lane dentro de un pool, asociada a un rol de proceso."
+						"description": "El nombre de la lane sigue al del rol de proceso asignado.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Recepción\",\n  \"rolProcesoId\": {{rolAId}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('id es numérico', () => pm.expect(json.id).to.be.a('number'));",
+									"pm.test('Pertenece al pool', () => pm.expect(json.poolId).to.eql(Number(pm.collectionVariables.get('poolId'))));",
+									"pm.collectionVariables.set('laneAId', pm.response.json().id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Crear lane de aprobación",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pools/{{poolId}}/lanes",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"pools",
+								"{{poolId}}",
+								"lanes"
+							]
+						},
+						"description": "El nombre de la lane sigue al del rol de proceso asignado.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Aprobación\",\n  \"rolProcesoId\": {{rolBId}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('id es numérico', () => pm.expect(json.id).to.be.a('number'));",
+									"pm.test('Pertenece al pool', () => pm.expect(json.poolId).to.eql(Number(pm.collectionVariables.get('poolId'))));",
+									"pm.collectionVariables.set('laneBId', pm.response.json().id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Crear lane en pool de caja negra (falla)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pools/{{poolExternoId}}/lanes",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"pools",
+								"{{poolExternoId}}",
+								"lanes"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Lane no permitida\",\n  \"rolProcesoId\": {{rolAId}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 409', () => pm.response.to.have.status(409));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Listar lanes del pool",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pools/{{poolId}}/lanes",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"pools",
+								"{{poolId}}",
+								"lanes"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"pm.test('Hay dos lanes', () => pm.expect(pm.response.json().length).to.eql(2));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Obtener lane",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/lanes/{{laneAId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"lanes",
+								"{{laneAId}}"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('rolProcesoId es numérico', () => pm.expect(json.rolProcesoId).to.be.a('number'));",
+									"pm.test('Tiene rolProcesoNombre', () => pm.expect(json.rolProcesoNombre).to.be.a('string'));"
+								]
+							}
+						}
+					]
 				},
 				{
 					"name": "Editar lane",
@@ -739,52 +2059,241 @@
 								"value": "application/json"
 							}
 						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/lanes/{{laneAId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"lanes",
+								"{{laneAId}}"
+							]
+						},
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Recepcion v2\",\n  \"rolProcesoId\": {{rolId}}\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/lanes/{{laneId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "lanes", "{{laneId}}"]
-						},
-						"description": "Edita el nombre y rol de una lane."
+							"raw": "{\n  \"nombre\": \"Recepción de solicitudes\",\n  \"rolProcesoId\": {{rolAId}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('id es numérico', () => pm.expect(json.id).to.be.a('number'));"
+								]
+							}
+						}
+					]
 				},
 				{
-					"name": "Eliminar lane",
+					"name": "Reordenar las lanes del pool",
 					"request": {
-						"method": "DELETE",
-						"header": [],
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/lanes/{{laneId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "lanes", "{{laneId}}"]
+							"raw": "{{baseUrl}}/api/v1/pools/{{poolId}}/lanes/orden",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"pools",
+								"{{poolId}}",
+								"lanes",
+								"orden"
+							]
 						},
-						"description": "Elimina una lane."
+						"description": "laneIds debe contener exactamente todas las lanes del pool, sin repetidos.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"laneIds\": [{{laneBId}}, {{laneAId}}]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"pm.test('Nuevo orden', () => pm.expect(pm.response.json()[0].id).to.eql(Number(pm.collectionVariables.get('laneBId'))));"
+								]
+							}
+						}
+					]
 				}
 			]
 		},
 		{
-			"name": "Actividades",
-			"description": "Tareas del proceso BPMN. Se crean dentro de una lane.",
+			"name": "08 Actividades",
 			"item": [
 				{
-					"name": "Obtener actividad",
+					"name": "Crear actividad Recibir solicitud",
 					"request": {
-						"method": "GET",
-						"header": [],
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/actividades/{{actividadId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "actividades", "{{actividadId}}"]
+							"raw": "{{baseUrl}}/api/v1/lanes/{{laneAId}}/actividades",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"lanes",
+								"{{laneAId}}",
+								"actividades"
+							]
 						},
-						"description": "Obtiene una actividad por su ID."
+						"description": "tipoActividad es opcional: TAREA, USUARIO, SERVICIO, MANUAL, SCRIPT o REGLA_NEGOCIO.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Recibir solicitud\",\n  \"descripcion\": \"Radicación de la solicitud\",\n  \"posicionX\": 100,\n  \"posicionY\": 120,\n  \"tipoActividad\": \"TAREA\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('tipoActividad = TAREA', () => pm.expect(json.tipoActividad).to.eql(\"TAREA\"));",
+									"pm.collectionVariables.set('actividadAId', pm.response.json().id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Crear actividad Aprobar solicitud",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/lanes/{{laneBId}}/actividades",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"lanes",
+								"{{laneBId}}",
+								"actividades"
+							]
+						},
+						"description": "tipoActividad es opcional: TAREA, USUARIO, SERVICIO, MANUAL, SCRIPT o REGLA_NEGOCIO.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Aprobar solicitud\",\n  \"descripcion\": \"Aprobación por el jefe\",\n  \"posicionX\": 420,\n  \"posicionY\": 80,\n  \"tipoActividad\": \"USUARIO\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('tipoActividad = USUARIO', () => pm.expect(json.tipoActividad).to.eql(\"USUARIO\"));",
+									"pm.collectionVariables.set('actividadBId', pm.response.json().id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Crear actividad Rechazar solicitud",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/lanes/{{laneBId}}/actividades",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"lanes",
+								"{{laneBId}}",
+								"actividades"
+							]
+						},
+						"description": "tipoActividad es opcional: TAREA, USUARIO, SERVICIO, MANUAL, SCRIPT o REGLA_NEGOCIO.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Rechazar solicitud\",\n  \"descripcion\": \"Rechazo con justificación\",\n  \"posicionX\": 420,\n  \"posicionY\": 200,\n  \"tipoActividad\": \"USUARIO\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('tipoActividad = USUARIO', () => pm.expect(json.tipoActividad).to.eql(\"USUARIO\"));",
+									"pm.collectionVariables.set('actividadCId', pm.response.json().id);"
+								]
+							}
+						}
+					]
 				},
 				{
 					"name": "Listar actividades de la lane",
@@ -792,53 +2301,66 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/lanes/{{laneId}}/actividades",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "lanes", "{{laneId}}", "actividades"]
-						},
-						"description": "HU-24: Lista las actividades de una lane."
+							"raw": "{{baseUrl}}/api/v1/lanes/{{laneBId}}/actividades",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"lanes",
+								"{{laneBId}}",
+								"actividades"
+							]
+						}
 					},
-					"response": []
-				},
-				{
-					"name": "Crear actividad",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"if (pm.response.code === 201) {",
-									"    var json = pm.response.json();",
-									"    pm.collectionVariables.set('actividadId', json.id);",
-									"}"
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"pm.test('La respuesta es una lista', () => pm.expect(pm.response.json()).to.be.an('array'));"
 								]
 							}
 						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Revisar solicitud\",\n  \"descripcion\": \"Verificar datos del cliente\",\n  \"posicionX\": 200,\n  \"posicionY\": 150\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/lanes/{{laneId}}/actividades",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "lanes", "{{laneId}}", "actividades"]
-						},
-						"description": "HU-08: Crea una actividad dentro de una lane."
-					},
-					"response": []
+					]
 				},
 				{
-					"name": "Editar actividad",
+					"name": "Obtener actividad",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/actividades/{{actividadAId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"actividades",
+								"{{actividadAId}}"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('nombre = Recibir solicitud', () => pm.expect(json.nombre).to.eql(\"Recibir solicitud\"));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Editar actividad (posición y lane)",
 					"request": {
 						"method": "PUT",
 						"header": [
@@ -847,52 +2369,178 @@
 								"value": "application/json"
 							}
 						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/actividades/{{actividadAId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"actividades",
+								"{{actividadAId}}"
+							]
+						},
+						"description": "laneId es opcional: si se envía distinta a la actual, mueve la actividad a otra lane del mismo proceso.",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Revisar solicitud v2\",\n  \"descripcion\": \"Verificar datos actualizados\",\n  \"posicionX\": 250,\n  \"posicionY\": 150\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/actividades/{{actividadId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "actividades", "{{actividadId}}"]
-						},
-						"description": "HU-09: Edita una actividad existente."
+							"raw": "{\n  \"nombre\": \"Recibir solicitud\",\n  \"descripcion\": \"Radicación de la solicitud\",\n  \"posicionX\": 150,\n  \"posicionY\": 120,\n  \"laneId\": {{laneAId}},\n  \"tipoActividad\": \"TAREA\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('posicionX = 150', () => pm.expect(json.posicionX).to.eql(150));"
+								]
+							}
+						}
+					]
 				},
 				{
-					"name": "Eliminar actividad",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/actividades/{{actividadId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "actividades", "{{actividadId}}"]
-						},
-						"description": "HU-10: Elimina una actividad."
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Gateways",
-			"description": "Puntos de decision o ramificacion del flujo BPMN.",
-			"item": [
-				{
-					"name": "Obtener gateway",
+					"name": "Evaluar el impacto de eliminar una actividad",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/gateways/{{gatewayId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "gateways", "{{gatewayId}}"]
+							"raw": "{{baseUrl}}/api/v1/actividades/{{actividadCId}}/impacto-eliminacion",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"actividades",
+								"{{actividadCId}}",
+								"impacto-eliminacion"
+							]
 						},
-						"description": "Obtiene un gateway por su ID."
+						"description": "No elimina nada: solo devuelve advertencias."
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('Forma del impacto', () => { const j = pm.response.json(); pm.expect(j.requiereConfirmacion).to.be.a('boolean'); pm.expect(j.rompeContinuidad).to.be.a('boolean'); pm.expect(j.advertencias).to.be.an('array'); });"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "09 Gateways",
+			"item": [
+				{
+					"name": "Crear gateway exclusivo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/lanes/{{laneAId}}/gateways",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"lanes",
+								"{{laneAId}}",
+								"gateways"
+							]
+						},
+						"description": "tipoGateway: EXCLUSIVO, PARALELO o INCLUSIVO.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Verificar días disponibles\",\n  \"tipoGateway\": \"EXCLUSIVO\",\n  \"posicionX\": 260,\n  \"posicionY\": 120\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('tipoGateway = EXCLUSIVO', () => pm.expect(json.tipoGateway).to.eql(\"EXCLUSIVO\"));",
+									"pm.collectionVariables.set('gatewayId', pm.response.json().id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Crear gateway paralelo temporal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/lanes/{{laneAId}}/gateways",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"lanes",
+								"{{laneAId}}",
+								"gateways"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Gateway temporal\",\n  \"tipoGateway\": \"PARALELO\",\n  \"posicionX\": 260,\n  \"posicionY\": 260\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('tipoGateway = PARALELO', () => pm.expect(json.tipoGateway).to.eql(\"PARALELO\"));",
+									"pm.collectionVariables.set('gatewayTempId', pm.response.json().id);"
+								]
+							}
+						}
+					]
 				},
 				{
 					"name": "Listar gateways de la lane",
@@ -900,53 +2548,66 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/lanes/{{laneId}}/gateways",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "lanes", "{{laneId}}", "gateways"]
-						},
-						"description": "Lista los gateways de una lane."
+							"raw": "{{baseUrl}}/api/v1/lanes/{{laneAId}}/gateways",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"lanes",
+								"{{laneAId}}",
+								"gateways"
+							]
+						}
 					},
-					"response": []
-				},
-				{
-					"name": "Crear gateway",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"if (pm.response.code === 201) {",
-									"    var json = pm.response.json();",
-									"    pm.collectionVariables.set('gatewayId', json.id);",
-									"}"
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"pm.test('La respuesta es una lista', () => pm.expect(pm.response.json()).to.be.an('array'));"
 								]
 							}
 						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Aprobacion requerida?\",\n  \"tipoGateway\": \"EXCLUSIVO\",\n  \"posicionX\": 400,\n  \"posicionY\": 150\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/lanes/{{laneId}}/gateways",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "lanes", "{{laneId}}", "gateways"]
-						},
-						"description": "HU-14: Crea un gateway. Tipos: EXCLUSIVO, PARALELO, INCLUSIVO."
-					},
-					"response": []
+					]
 				},
 				{
-					"name": "Editar gateway",
+					"name": "Obtener gateway",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/gateways/{{gatewayId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"gateways",
+								"{{gatewayId}}"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('tipoGateway = EXCLUSIVO', () => pm.expect(json.tipoGateway).to.eql(\"EXCLUSIVO\"));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Editar gateway y moverlo de lane",
 					"request": {
 						"method": "PUT",
 						"header": [
@@ -955,52 +2616,293 @@
 								"value": "application/json"
 							}
 						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/gateways/{{gatewayId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"gateways",
+								"{{gatewayId}}"
+							]
+						},
+						"description": "laneId es opcional: mueve el gateway a otra lane del mismo proceso (si cambia de pool no puede tener arcos).",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Decision de pago\",\n  \"tipoGateway\": \"PARALELO\",\n  \"posicionX\": 400,\n  \"posicionY\": 200\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/gateways/{{gatewayId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "gateways", "{{gatewayId}}"]
-						},
-						"description": "HU-15: Edita un gateway existente."
+							"raw": "{\n  \"nombre\": \"Verificar días disponibles\",\n  \"tipoGateway\": \"EXCLUSIVO\",\n  \"posicionX\": 280,\n  \"posicionY\": 140,\n  \"laneId\": {{laneBId}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('posicionX = 280', () => pm.expect(json.posicionX).to.eql(280));",
+									"pm.test('Quedó en la lane indicada', () => pm.expect(json.laneId).to.eql(Number(pm.collectionVariables.get('laneBId'))));"
+								]
+							}
+						}
+					]
 				},
 				{
-					"name": "Eliminar gateway",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/gateways/{{gatewayId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "gateways", "{{gatewayId}}"]
-						},
-						"description": "HU-16: Elimina un gateway."
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Arcos",
-			"description": "Conexiones de flujo entre nodos (actividades y gateways) dentro de un pool.",
-			"item": [
-				{
-					"name": "Obtener arco",
+					"name": "Evaluar el impacto de eliminar un gateway",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/arcos/{{arcoId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "arcos", "{{arcoId}}"]
-						},
-						"description": "Obtiene un arco por su ID."
+							"raw": "{{baseUrl}}/api/v1/gateways/{{gatewayTempId}}/impacto-eliminacion",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"gateways",
+								"{{gatewayTempId}}",
+								"impacto-eliminacion"
+							]
+						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('Forma del impacto', () => { const j = pm.response.json(); pm.expect(j.requiereConfirmacion).to.be.a('boolean'); pm.expect(j.rompeContinuidad).to.be.a('boolean'); pm.expect(j.advertencias).to.be.an('array'); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Eliminar el gateway temporal",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/gateways/{{gatewayTempId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"gateways",
+								"{{gatewayTempId}}"
+							]
+						},
+						"description": "Solo administrador."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "10 Arcos",
+			"item": [
+				{
+					"name": "Crear arco Recibir → Gateway",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/arcos",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"arcos"
+							]
+						},
+						"description": "Origen y destino deben ser del mismo pool. La condición solo se admite en salidas de gateways exclusivos o inclusivos.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"origenId\": {{actividadAId}},\n  \"destinoId\": {{gatewayId}},\n  \"etiqueta\": \"solicitud recibida\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('poolId es numérico', () => pm.expect(json.poolId).to.be.a('number'));",
+									"pm.collectionVariables.set('arcoAId', pm.response.json().id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Crear arco Gateway → Aprobar (con condición)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/arcos",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"arcos"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"origenId\": {{gatewayId}},\n  \"destinoId\": {{actividadBId}},\n  \"etiqueta\": \"hay días\",\n  \"condicion\": \"diasSolicitados <= diasDisponibles\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('condicion = diasSolicitados <= diasDisponibles', () => pm.expect(json.condicion).to.eql(\"diasSolicitados <= diasDisponibles\"));",
+									"pm.collectionVariables.set('arcoBId', pm.response.json().id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Crear arco Gateway → Rechazar (con condición)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/arcos",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"arcos"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"origenId\": {{gatewayId}},\n  \"destinoId\": {{actividadCId}},\n  \"etiqueta\": \"no hay días\",\n  \"condicion\": \"diasSolicitados > diasDisponibles\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.collectionVariables.set('arcoCId', pm.response.json().id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Crear arco desde el gateway sin condición (falla)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/arcos",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"arcos"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"origenId\": {{gatewayId}},\n  \"destinoId\": {{actividadAId}},\n  \"etiqueta\": \"sin condición\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 409', () => pm.response.to.have.status(409));"
+								]
+							}
+						}
+					]
 				},
 				{
 					"name": "Listar arcos del pool",
@@ -1009,49 +2911,63 @@
 						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/pools/{{poolId}}/arcos",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "pools", "{{poolId}}", "arcos"]
-						},
-						"description": "Lista los arcos de un pool."
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"pools",
+								"{{poolId}}",
+								"arcos"
+							]
+						}
 					},
-					"response": []
-				},
-				{
-					"name": "Crear arco",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"if (pm.response.code === 201) {",
-									"    var json = pm.response.json();",
-									"    pm.collectionVariables.set('arcoId', json.id);",
-									"}"
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"pm.test('Hay tres arcos', () => pm.expect(pm.response.json().length).to.eql(3));"
 								]
 							}
 						}
-					],
+					]
+				},
+				{
+					"name": "Obtener arco",
 					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"origenId\": {{actividadId}},\n  \"destinoId\": {{gatewayId}},\n  \"etiqueta\": \"completado\",\n  \"condicion\": null\n}"
-						},
+						"method": "GET",
+						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/arcos",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "arcos"]
-						},
-						"description": "HU-11: Crea un arco (flujo) entre dos nodos del mismo pool."
+							"raw": "{{baseUrl}}/api/v1/arcos/{{arcoAId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"arcos",
+								"{{arcoAId}}"
+							]
+						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('origenId es numérico', () => pm.expect(json.origenId).to.be.a('number'));",
+									"pm.test('destinoId es numérico', () => pm.expect(json.destinoId).to.be.a('number'));"
+								]
+							}
+						}
+					]
 				},
 				{
 					"name": "Editar arco",
@@ -1063,83 +2979,83 @@
 								"value": "application/json"
 							}
 						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/arcos/{{arcoAId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"arcos",
+								"{{arcoAId}}"
+							]
+						},
+						"description": "Todos los campos son opcionales (etiqueta, condicion, origenId, destinoId).",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"etiqueta\": \"si\",\n  \"condicion\": \"monto > 1000\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/arcos/{{arcoId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "arcos", "{{arcoId}}"]
-						},
-						"description": "HU-12: Edita la etiqueta y condicion de un arco."
+							"raw": "{\n  \"etiqueta\": \"solicitud verificada\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
 					},
-					"response": []
-				},
-				{
-					"name": "Eliminar arco",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/arcos/{{arcoId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "arcos", "{{arcoId}}"]
-						},
-						"description": "HU-13: Elimina un arco."
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Mensajes",
-			"description": "Comunicacion entre pools (un participante envia, otro recibe).",
-			"item": [
-				{
-					"name": "Listar mensajes del proceso",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/mensajes",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "procesos", "{{procesoId}}", "mensajes"]
-						},
-						"description": "HU-27: Lista todos los mensajes de un proceso."
-					},
-					"response": []
-				},
-				{
-					"name": "Obtener mensaje",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/mensajes/{{mensajeId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "mensajes", "{{mensajeId}}"]
-						},
-						"description": "Obtiene un mensaje por su ID."
-					},
-					"response": []
-				},
-				{
-					"name": "Crear mensaje",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"if (pm.response.code === 201) {",
-									"    var json = pm.response.json();",
-									"    pm.collectionVariables.set('mensajeId', json.id);",
-									"}"
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('etiqueta = solicitud verificada', () => pm.expect(json.etiqueta).to.eql(\"solicitud verificada\"));"
 								]
 							}
 						}
-					],
+					]
+				},
+				{
+					"name": "Evaluar el impacto de eliminar un arco",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/arcos/{{arcoCId}}/impacto-eliminacion",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"arcos",
+								"{{arcoCId}}",
+								"impacto-eliminacion"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('Forma del impacto', () => { const j = pm.response.json(); pm.expect(j.requiereConfirmacion).to.be.a('boolean'); pm.expect(j.rompeContinuidad).to.be.a('boolean'); pm.expect(j.advertencias).to.be.an('array'); });"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "11 Eventos de mensaje",
+			"item": [
+				{
+					"name": "Crear Message Throw",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -1148,18 +3064,407 @@
 								"value": "application/json"
 							}
 						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/lanes/{{laneBId}}/eventos-mensaje",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"lanes",
+								"{{laneBId}}",
+								"eventos-mensaje"
+							]
+						},
+						"description": "tipoEvento: THROW, CATCH_INICIO o CATCH_INTERMEDIO. El nombre no puede repetirse entre los nodos del proceso.",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Orden de compra\",\n  \"contenido\": \"Datos del pedido\",\n  \"poolOrigenId\": {{poolId}},\n  \"poolDestinoId\": {{poolId}}\n}"
+							"raw": "{\n  \"nombre\": \"Notificar aprobación\",\n  \"tipoEvento\": \"THROW\",\n  \"contenido\": \"numeroSolicitud, fechaInicio, fechaFin\",\n  \"claveCorrelacion\": \"numeroSolicitud\",\n  \"posicionX\": 600,\n  \"posicionY\": 80,\n  \"origenExterno\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('tipoEvento = THROW', () => pm.expect(json.tipoEvento).to.eql(\"THROW\"));",
+									"pm.collectionVariables.set('eventoThrowId', pm.response.json().id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Crear Message Catch de inicio (con actividades)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/lanes/{{laneAId}}/eventos-mensaje",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"lanes",
+								"{{laneAId}}",
+								"eventos-mensaje"
+							]
 						},
+						"description": "actividadIds (solo en eventos CATCH): actividades del mismo proceso que usan los datos del mensaje. Un Catch de inicio de origen externo no necesita mensaje vinculado.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Recibir solicitud externa\",\n  \"tipoEvento\": \"CATCH_INICIO\",\n  \"contenido\": \"numeroSolicitud, empleado\",\n  \"claveCorrelacion\": \"numeroSolicitud\",\n  \"posicionX\": 40,\n  \"posicionY\": 120,\n  \"origenExterno\": true,\n  \"actividadIds\": [{{actividadAId}}]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('tipoEvento = CATCH_INICIO', () => pm.expect(json.tipoEvento).to.eql(\"CATCH_INICIO\"));",
+									"pm.test('Guarda actividadIds', () => pm.expect(json.actividadIds).to.include(Number(pm.collectionVariables.get('actividadAId'))));",
+									"pm.collectionVariables.set('eventoCatchId', pm.response.json().id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Listar eventos de mensaje de la lane",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/lanes/{{laneBId}}/eventos-mensaje",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"lanes",
+								"{{laneBId}}",
+								"eventos-mensaje"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"pm.test('La respuesta es una lista', () => pm.expect(pm.response.json()).to.be.an('array'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Ver el detalle de un evento de mensaje",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/eventos-mensaje/{{eventoCatchId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"eventos-mensaje",
+								"{{eventoCatchId}}"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('tipoEvento = CATCH_INICIO', () => pm.expect(json.tipoEvento).to.eql(\"CATCH_INICIO\"));",
+									"pm.test('Trae actividadIds', () => pm.expect(json.actividadIds).to.be.an('array'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Editar Catch: mover de lane y cambiar actividadIds",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/eventos-mensaje/{{eventoCatchId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"eventos-mensaje",
+								"{{eventoCatchId}}"
+							]
+						},
+						"description": "laneId es opcional (mueve el evento a otra lane del mismo proceso y pool). actividadIds: si se omite no cambia; una lista vacía quita todas.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Recibir solicitud externa\",\n  \"tipoEvento\": \"CATCH_INICIO\",\n  \"contenido\": \"numeroSolicitud, empleado\",\n  \"claveCorrelacion\": \"numeroSolicitud\",\n  \"posicionX\": 60,\n  \"posicionY\": 140,\n  \"origenExterno\": true,\n  \"laneId\": {{laneBId}},\n  \"actividadIds\": [{{actividadAId}}, {{actividadBId}}]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('Quedó en la lane indicada', () => pm.expect(json.laneId).to.eql(Number(pm.collectionVariables.get('laneBId'))));",
+									"pm.test('Dos actividades', () => pm.expect(json.actividadIds.length).to.eql(2));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Evaluar el impacto de eliminar un evento de mensaje",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/eventos-mensaje/{{eventoThrowId}}/impacto-eliminacion",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"eventos-mensaje",
+								"{{eventoThrowId}}",
+								"impacto-eliminacion"
+							]
+						},
+						"description": "Devuelve advertencias sobre arcos y mensajes afectados, sin eliminar nada."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('Forma del impacto', () => { const j = pm.response.json(); pm.expect(j.requiereConfirmacion).to.be.a('boolean'); pm.expect(j.rompeContinuidad).to.be.a('boolean'); pm.expect(j.advertencias).to.be.an('array'); });"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "12 Mensajes",
+			"item": [
+				{
+					"name": "Crear mensaje hacia un sistema externo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/mensajes",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "procesos", "{{procesoId}}", "mensajes"]
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos",
+								"{{procesoId}}",
+								"mensajes"
+							]
 						},
-						"description": "HU-25: Crea un mensaje entre dos pools."
+						"description": "El nombre debe coincidir con el del Message Throw. Correlación, destino externo y políticas requieren eventoThrowId. Un destino externo exige pool SISTEMA_EXTERNO de caja negra, destinoExterno (máx. 200 caracteres, solo descripción) y politicaFalloNotificacion (CONTINUAR_FLUJO, DERIVAR_ACTIVIDAD_ERROR con actividadErrorId, o FINALIZAR_PROCESO).",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Notificar aprobación\",\n  \"contenido\": \"numeroSolicitud, fechaInicio, fechaFin\",\n  \"poolOrigenId\": {{poolId}},\n  \"poolDestinoId\": {{poolExternoId}},\n  \"eventoThrowId\": {{eventoThrowId}},\n  \"claveCorrelacion\": \"numeroSolicitud\",\n  \"tipoDestinoExterno\": \"SERVICIO_WEB\",\n  \"destinoExterno\": \"API de nómina (descripción, sin credenciales)\",\n  \"politicaFalloNotificacion\": \"CONTINUAR_FLUJO\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('tipoDestinoExterno = SERVICIO_WEB', () => pm.expect(json.tipoDestinoExterno).to.eql(\"SERVICIO_WEB\"));",
+									"pm.test('politicaFalloNotificacion = CONTINUAR_FLUJO', () => pm.expect(json.politicaFalloNotificacion).to.eql(\"CONTINUAR_FLUJO\"));",
+									"pm.collectionVariables.set('mensajeId', pm.response.json().id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Crear mensaje con campos avanzados sin Throw (falla)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/mensajes",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos",
+								"{{procesoId}}",
+								"mensajes"
+							]
+						},
+						"description": "claveCorrelacion, destino externo y políticas requieren eventoThrowId.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Mensaje sin throw\",\n  \"contenido\": \"dato\",\n  \"poolOrigenId\": {{poolId}},\n  \"poolDestinoId\": {{poolExternoId}},\n  \"claveCorrelacion\": \"numeroSolicitud\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 400', () => pm.response.to.have.status(400));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Listar los mensajes del proceso",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/mensajes",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos",
+								"{{procesoId}}",
+								"mensajes"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"pm.test('Hay un mensaje', () => pm.expect(pm.response.json().length).to.eql(1));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Ver el detalle de un mensaje",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/mensajes/{{mensajeId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"mensajes",
+								"{{mensajeId}}"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('eventoThrowId es numérico', () => pm.expect(json.eventoThrowId).to.be.a('number'));",
+									"pm.test('poolDestinoId es numérico', () => pm.expect(json.poolDestinoId).to.be.a('number'));"
+								]
+							}
+						}
+					]
 				},
 				{
 					"name": "Editar mensaje",
@@ -1171,41 +3476,50 @@
 								"value": "application/json"
 							}
 						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/mensajes/{{mensajeId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"mensajes",
+								"{{mensajeId}}"
+							]
+						},
+						"description": "Mantiene nombre y clave del Throw; el destino externo y las políticas son opcionales (si se omiten se conservan).",
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"nombre\": \"Orden actualizada\",\n  \"contenido\": \"Datos del pedido corregidos\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/mensajes/{{mensajeId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "mensajes", "{{mensajeId}}"]
-						},
-						"description": "HU-26: Edita un mensaje existente."
+							"raw": "{\n  \"nombre\": \"Notificar aprobación\",\n  \"contenido\": \"numeroSolicitud, fechaInicio, fechaFin, aprobador\",\n  \"claveCorrelacion\": \"numeroSolicitud\",\n  \"politicaFalloNotificacion\": \"CONTINUAR_FLUJO\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
 					},
-					"response": []
-				},
-				{
-					"name": "Eliminar mensaje",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/v1/mensajes/{{mensajeId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "mensajes", "{{mensajeId}}"]
-						},
-						"description": "Elimina un mensaje."
-					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('Contenido actualizado', () => pm.expect(json.contenido).to.include('aprobador'));"
+								]
+							}
+						}
+					]
 				}
 			]
 		},
 		{
-			"name": "Correlacion",
-			"description": "Criterio que identifica a que instancia del proceso pertenece un mensaje.",
+			"name": "13 Correlación",
 			"item": [
 				{
-					"name": "Definir correlacion",
+					"name": "Definir la correlación del mensaje",
 					"request": {
 						"method": "PUT",
 						"header": [
@@ -1214,32 +3528,1146 @@
 								"value": "application/json"
 							}
 						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"criterio\": \"orderId\"\n}"
-						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/mensajes/{{mensajeId}}/correlacion",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "mensajes", "{{mensajeId}}", "correlacion"]
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"mensajes",
+								"{{mensajeId}}",
+								"correlacion"
+							]
 						},
-						"description": "HU-28: Define o actualiza el criterio de correlacion de un mensaje."
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"criterio\": \"numeroSolicitud\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('criterio = numeroSolicitud', () => pm.expect(json.criterio).to.eql(\"numeroSolicitud\"));",
+									"pm.test('mensajeId es numérico', () => pm.expect(json.mensajeId).to.be.a('number'));"
+								]
+							}
+						}
+					]
 				},
 				{
-					"name": "Obtener correlacion",
+					"name": "Obtener la correlación del mensaje",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/mensajes/{{mensajeId}}/correlacion",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "mensajes", "{{mensajeId}}", "correlacion"]
-						},
-						"description": "HU-28: Obtiene la correlacion de un mensaje."
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"mensajes",
+								"{{mensajeId}}",
+								"correlacion"
+							]
+						}
 					},
-					"response": []
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('criterio = numeroSolicitud', () => pm.expect(json.criterio).to.eql(\"numeroSolicitud\"));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "14 Validación y publicación",
+			"item": [
+				{
+					"name": "Validar el modelo (listo para publicar)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/validacion",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos",
+								"{{procesoId}}",
+								"validacion"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('Modelo válido sin advertencias', () => { pm.expect(json.valido).to.be.true; pm.expect(json.advertencias).to.be.an('array').and.be.empty; });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Publicar el proceso",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos",
+								"{{procesoId}}"
+							]
+						},
+						"description": "Cambia el estado a PUBLICADO; un proceso publicado no vuelve a borrador.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"estado\": \"PUBLICADO\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('estado = PUBLICADO', () => pm.expect(json.estado).to.eql(\"PUBLICADO\"));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Consultar el diagrama completo",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/diagrama",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos",
+								"{{procesoId}}",
+								"diagrama"
+							]
+						},
+						"description": "Agrega pools, lanes, actividades, gateways, eventos, arcos y mensajes en una sola respuesta."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('Contiene todas las colecciones', () => ['pools','lanes','actividades','gateways','eventos','arcos','mensajes'].forEach(k => pm.expect(json[k]).to.be.an('array')));",
+									"pm.test('Proceso publicado', () => pm.expect(json.proceso.estado).to.eql('PUBLICADO'));",
+									"pm.test('Dos pools, dos lanes, tres actividades', () => { pm.expect(json.pools.length).to.eql(2); pm.expect(json.lanes.length).to.eql(2); pm.expect(json.actividades.length).to.eql(3); });"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "15 Compartir procesos",
+			"item": [
+				{
+					"name": "Registrar segunda empresa (invitada)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/empresas",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"empresas"
+							]
+						},
+						"description": "Segunda empresa con su administrador; recibirá el proceso compartido. Guarda emailB y passwordB.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombreEmpresa\": \"Empresa invitada {{runId}}\",\n  \"nit\": \"NIT-B-{{runId}}\",\n  \"correoContacto\": \"contacto.b.{{runId}}@ejemplo.test\",\n  \"nombreAdmin\": \"Administrador invitada\",\n  \"emailAdmin\": \"{{emailB}}\",\n  \"passwordAdmin\": \"{{passwordB}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.collectionVariables.set('emailB', 'admin.b.' + pm.collectionVariables.get('runId') + '@ejemplo.test');",
+									"pm.collectionVariables.set('passwordB', 'Clave-Prueba-2026');"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('id es numérico', () => pm.expect(json.id).to.be.a('number'));",
+									"pm.collectionVariables.set('empresaBId', pm.response.json().id);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Compartir el proceso con otra empresa",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/compartidos",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos",
+								"{{procesoId}}",
+								"compartidos"
+							]
+						},
+						"description": "Solo administrador. El acceso otorgado siempre es de solo lectura.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"empresaInvitadaId\": {{empresaBId}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('soloLectura = true', () => pm.expect(json.soloLectura).to.eql(true));",
+									"pm.test('Empresa invitada correcta', () => pm.expect(json.empresaInvitadaId).to.eql(Number(pm.collectionVariables.get('empresaBId'))));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Listar con quién comparto el proceso",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/compartidos",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos",
+								"{{procesoId}}",
+								"compartidos"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"pm.test('Una empresa invitada', () => pm.expect(pm.response.json().length).to.eql(1));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Iniciar sesión como la empresa invitada",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{emailB}}\",\n  \"password\": \"{{passwordB}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('tokenType = Bearer', () => pm.expect(json.tokenType).to.eql(\"Bearer\"));",
+									"pm.collectionVariables.set('token', json.accessToken);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Listar los procesos compartidos conmigo",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos-compartidos",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos-compartidos"
+							]
+						},
+						"description": "Se ejecuta con la sesión de la empresa invitada."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"pm.test('Aparece el proceso compartido', () => pm.expect(pm.response.json().map(c => c.procesoId)).to.include(Number(pm.collectionVariables.get('procesoId'))));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Ver el detalle de un proceso compartido recibido",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos-compartidos/{{procesoId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos-compartidos",
+								"{{procesoId}}"
+							]
+						},
+						"description": "Solo lectura."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('Devuelve el detalle', () => pm.expect(json).to.be.an('object'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "La empresa invitada no puede editar el proceso (falla)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos",
+								"{{procesoId}}"
+							]
+						},
+						"description": "El proceso es de otra empresa: para quien lo recibió no existe como propio.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Intento de edición\",\n  \"descripcion\": \"No debe aplicarse\",\n  \"categoria\": \"Pruebas\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 404', () => pm.response.to.have.status(404));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Volver a iniciar sesión como la empresa propietaria",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Público. Devuelve accessToken (JWT); el script lo guarda en la variable token, que usan las demás requests como Bearer.",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('Devuelve accessToken', () => pm.expect(json.accessToken).to.be.a('string').and.not.empty);",
+									"pm.test('tokenType = Bearer', () => pm.expect(json.tokenType).to.eql(\"Bearer\"));",
+									"pm.test('expiresIn numérico', () => pm.expect(json.expiresIn).to.be.a('number'));",
+									"pm.test('Incluye el usuario', () => { pm.expect(json.usuario.email).to.be.a('string'); pm.expect(json.usuario.rolAcceso).to.be.a('string'); });",
+									"pm.collectionVariables.set('token', json.accessToken);"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Revocar el acceso compartido",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}/compartidos/{{empresaBId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos",
+								"{{procesoId}}",
+								"compartidos",
+								"{{empresaBId}}"
+							]
+						},
+						"description": "Solo administrador."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "16 Limpieza y cierre",
+			"description": "Las eliminaciones van al final y de las hojas hacia la raíz: cada baja exige que nada activo dependa del elemento.",
+			"item": [
+				{
+					"name": "Eliminar la correlación del mensaje",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/mensajes/{{mensajeId}}/correlacion",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"mensajes",
+								"{{mensajeId}}",
+								"correlacion"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Eliminar mensaje",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/mensajes/{{mensajeId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"mensajes",
+								"{{mensajeId}}"
+							]
+						},
+						"description": "Solo administrador; elimina también su correlación."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Eliminar Message Throw",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/eventos-mensaje/{{eventoThrowId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"eventos-mensaje",
+								"{{eventoThrowId}}"
+							]
+						},
+						"description": "Solo administrador; antes hay que eliminar los mensajes que lo usan."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Eliminar Message Catch",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/eventos-mensaje/{{eventoCatchId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"eventos-mensaje",
+								"{{eventoCatchId}}"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Eliminar arco Recibir → Gateway",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/arcos/{{arcoAId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"arcos",
+								"{{arcoAId}}"
+							]
+						},
+						"description": "Solo administrador."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Eliminar arco Gateway → Aprobar",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/arcos/{{arcoBId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"arcos",
+								"{{arcoBId}}"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Eliminar arco Gateway → Rechazar",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/arcos/{{arcoCId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"arcos",
+								"{{arcoCId}}"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Eliminar actividad Recibir solicitud",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/actividades/{{actividadAId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"actividades",
+								"{{actividadAId}}"
+							]
+						},
+						"description": "Solo administrador; desactiva también los arcos conectados."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Eliminar actividad Aprobar solicitud",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/actividades/{{actividadBId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"actividades",
+								"{{actividadBId}}"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Eliminar actividad Rechazar solicitud",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/actividades/{{actividadCId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"actividades",
+								"{{actividadCId}}"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Eliminar el gateway exclusivo",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/gateways/{{gatewayId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"gateways",
+								"{{gatewayId}}"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Eliminar lane de recepción",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/lanes/{{laneAId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"lanes",
+								"{{laneAId}}"
+							]
+						},
+						"description": "Solo si no tiene elementos activos."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Eliminar lane de aprobación",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/lanes/{{laneBId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"lanes",
+								"{{laneBId}}"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Eliminar el pool externo",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/pools/{{poolExternoId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"pools",
+								"{{poolExternoId}}"
+							]
+						},
+						"description": "Solo si el pool no tiene elementos activos."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Eliminar rol Analista",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles/{{rolAId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"roles",
+								"{{rolAId}}"
+							]
+						},
+						"description": "Solo se puede si ninguna lane de un proceso activo lo usa."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Eliminar rol Gerente",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles/{{rolBId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"roles",
+								"{{rolBId}}"
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Eliminar el proceso (baja lógica)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procesos/{{procesoId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procesos",
+								"{{procesoId}}"
+							]
+						},
+						"description": "Solo administrador. Deja de listarse por defecto."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Cerrar sesión",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Sin estado en el servidor: el cliente descarta su token."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Código de estado 204', () => pm.response.to.have.status(204));",
+									"pm.collectionVariables.set('token', '');"
+								]
+							}
+						}
+					]
 				}
 			]
 		}
