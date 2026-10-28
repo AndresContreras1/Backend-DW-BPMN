@@ -205,8 +205,7 @@ class MensajeControllerTest {
     @DisplayName("PUT mensaje sin Message Throw con campos avanzados: el 400 del service sale como ProblemDetail")
     void editar_sin_throw_con_campos_avanzados_retorna_400_problemdetail() throws Exception {
         given(mensajeService.editar(eq(1L), eq(1L), any(EditarMensajeRequest.class)))
-                .willThrow(new org.springframework.web.server.ResponseStatusException(
-                        org.springframework.http.HttpStatus.BAD_REQUEST, "requieren un Message Throw"));
+                .willThrow(new com.facimus.procesos.common.SolicitudInvalidaException("requieren un Message Throw"));
 
         mockMvc.perform(put("/api/v1/mensajes/1")
                 .with(principal(RolAcceso.EDITOR))

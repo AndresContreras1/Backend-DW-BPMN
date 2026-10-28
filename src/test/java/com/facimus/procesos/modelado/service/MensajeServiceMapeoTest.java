@@ -111,14 +111,12 @@ class MensajeServiceMapeoTest {
     }
 
     @Test
-    void MensajeServiceImpl_editarCamposAvanzadosSinThrow_lanza400() {
+    void MensajeServiceImpl_editarCamposAvanzadosSinThrow_lanzaSolicitudInvalida() {
         doReturn(mensaje(1L, "Nuevo")).when(mensajeService).obtener(1L, 1L);
 
         assertThatThrownBy(() -> mensajeService.editar(1L, 1L, new EditarMensajeRequest("Nuevo", "Contenido", null,
                 "clave", null, null, null, null, null)))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-                .extracting(e -> ((org.springframework.web.server.ResponseStatusException) e).getStatusCode().value())
-                .isEqualTo(400);
+                .isInstanceOf(com.facimus.procesos.common.SolicitudInvalidaException.class);
     }
 
     @Test

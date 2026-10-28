@@ -8,13 +8,12 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.context.event.EventListener;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.facimus.procesos.common.ReglaNegocioException;
+import com.facimus.procesos.common.SolicitudInvalidaException;
 import com.facimus.procesos.common.RecursoNoEncontradoException;
 import com.facimus.procesos.common.event.PoolParticipanteModificadoEvent;
 import com.facimus.procesos.gestion.model.Proceso;
@@ -445,8 +444,7 @@ public class MensajeServiceImpl implements MensajeService {
                 && request.politicaFalloNotificacion() == null && request.actividadErrorId() == null
                 && request.politicaSinCaso() == null;
         if (!edicionLegacy && obtener(empresaId, mensajeId).getEventoThrow() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Los campos de correlacion, destino externo y politicas requieren que el mensaje tenga un Message Throw.");
+            throw new SolicitudInvalidaException("Los campos de correlacion, destino externo y politicas requieren que el mensaje tenga un Message Throw.");
         }
         Mensaje mensaje = edicionLegacy
                 ? editar(empresaId, mensajeId, request.nombre(), request.contenido())
