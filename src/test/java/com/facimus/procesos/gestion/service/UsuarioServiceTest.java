@@ -33,7 +33,7 @@ class UsuarioServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @InjectMocks
-    private UsuarioService usuarioService;
+    private UsuarioServiceImpl usuarioService;
 
     private Empresa empresa;
     private Usuario usuario;

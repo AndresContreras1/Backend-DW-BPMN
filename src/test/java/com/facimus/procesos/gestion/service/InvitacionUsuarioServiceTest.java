@@ -33,7 +33,7 @@ class InvitacionUsuarioServiceTest {
     private UsuarioService usuarioService;
 
     @InjectMocks
-    private InvitacionUsuarioService invitacionUsuarioService;
+    private InvitacionUsuarioServiceImpl invitacionUsuarioService;
 
     @Test
     void crear_rechaza_usuario_existente() {

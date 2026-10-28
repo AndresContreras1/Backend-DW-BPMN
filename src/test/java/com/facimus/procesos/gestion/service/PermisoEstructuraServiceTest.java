@@ -26,7 +26,7 @@ class PermisoEstructuraServiceTest {
     @Mock private EmpresaService empresaService;
 
     @InjectMocks
-    private PermisoEstructuraService service;
+    private PermisoEstructuraServiceImpl service;
 
     private Empresa empresa;
 

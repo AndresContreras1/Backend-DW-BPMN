@@ -40,7 +40,7 @@ class ProcesoOrquestadorServiceTest {
     private PoolService poolService;
 
     @InjectMocks
-    private ProcesoOrquestadorService procesoOrquestadorService;
+    private ProcesoOrquestadorServiceImpl procesoOrquestadorService;
 
     private Empresa empresa;
     private Proceso proceso;

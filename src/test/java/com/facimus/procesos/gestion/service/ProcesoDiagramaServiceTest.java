@@ -31,7 +31,7 @@ class ProcesoDiagramaServiceTest {
     @Mock private MensajeService mensajeService;
 
     @InjectMocks
-    private ProcesoDiagramaService service;
+    private ProcesoDiagramaServiceImpl service;
 
     @Test
     void obtener_clasifica_nodos_y_excluye_inactivos() {

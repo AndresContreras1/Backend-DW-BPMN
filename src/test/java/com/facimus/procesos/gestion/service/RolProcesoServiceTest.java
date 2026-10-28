@@ -47,7 +47,7 @@ class RolProcesoServiceTest {
     private HistorialCambioService historialCambioService;
 
     @InjectMocks
-    private RolProcesoService rolProcesoService;
+    private RolProcesoServiceImpl rolProcesoService;
 
     private Empresa empresa;
     private RolProceso rol;

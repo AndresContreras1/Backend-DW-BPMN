@@ -35,7 +35,7 @@ class EventoMensajeServiceTest {
     private AuditoriaModeladoService auditoriaModeladoService;
 
     @InjectMocks
-    private EventoMensajeService eventoMensajeService;
+    private EventoMensajeServiceImpl eventoMensajeService;
 
     @Test
     void crear_evento_guarda_y_audita() {

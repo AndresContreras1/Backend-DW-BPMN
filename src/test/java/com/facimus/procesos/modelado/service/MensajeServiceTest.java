@@ -50,7 +50,7 @@ class MensajeServiceTest {
     private AuditoriaModeladoService auditoriaModeladoService;
 
     @InjectMocks
-    private MensajeService mensajeService;
+    private MensajeServiceImpl mensajeService;
 
     private Empresa empresa;
     private Proceso proceso;

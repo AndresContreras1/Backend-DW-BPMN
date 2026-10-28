@@ -37,7 +37,7 @@ class PoolOrquestadorServiceTest {
     private MensajeService mensajeService;
 
     @InjectMocks
-    private PoolOrquestadorService poolOrquestadorService;
+    private PoolOrquestadorServiceImpl poolOrquestadorService;
 
     private Pool pool;
 
