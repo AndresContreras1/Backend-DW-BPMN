@@ -119,6 +119,7 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      # La URL (sonar.host.url), la organizacion y el projectKey salen del pom.xml; el unico secreto es SONAR_TOKEN.
       # sonar.qualitygate.wait=true hace que el job falle si el quality gate de SonarCloud
       # no se cumple (cobertura de codigo nuevo >= 80 %, sin bugs/vulnerabilidades nuevas,
       # duplicacion <= 3 %). Sin esto el analisis solo se sube y el job queda en verde
@@ -127,9 +128,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # necesario para leer los datos del PR
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: >
           mvn -B verify sonar:sonar
-          -Dsonar.host.url=$SONAR_HOST_URL
           -Dsonar.token=$SONAR_TOKEN
           -Dsonar.qualitygate.wait=true
