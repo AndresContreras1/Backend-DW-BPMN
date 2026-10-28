@@ -226,7 +226,7 @@ El informe queda en `target/site/jacoco/`. El detalle del inventario está en la
 | `build-and-test` | `mvn -B clean verify` en Ubuntu y Windows con JDK 21 (Temurin); publica los resultados de pruebas, el informe JaCoCo (Ubuntu) y comprueba que exista el JAR |
 | `architecture-guard` | Ejecuta solo las pruebas del paquete `arquitectura`. Depende de `build-and-test` |
 | `docker-build` | Construye la imagen, la ejecuta unos segundos e imprime sus logs (la construcción ya corre las pruebas con `mvn clean package`). Depende de los dos anteriores |
-| `sonarqube` | `mvn verify sonar:sonar` contra SonarCloud (proyecto `AndresContreras1_Backend-DW-BPMN`) con `sonar.qualitygate.wait=true`: el job falla si el quality gate no se cumple. Usa los secretos `SONAR_TOKEN` y `SONAR_HOST_URL`; en pull requests desde forks se omite porque no reciben secretos |
+| `sonarqube` | `mvn verify sonar:sonar` contra SonarCloud (proyecto `AndresContreras1_Backend-DW-BPMN`) con `sonar.qualitygate.wait=true`: el job falla si el quality gate no se cumple. Usa el secreto `SONAR_TOKEN` (la URL de SonarCloud, la organización y el projectKey salen del `pom.xml`); en pull requests desde forks se omite porque no reciben secretos |
 
 ## Estructura de paquetes
 

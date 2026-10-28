@@ -215,7 +215,7 @@ Workflow `.github/workflows/ci.yml` (en `push` a `main` y en `pull_request`):
 1. `build-and-test`: `mvn -B clean verify` en Ubuntu y Windows (JDK 21 Temurin), informe de pruebas, artefacto JaCoCo y verificación del JAR.
 2. `architecture-guard`: ejecuta solo las pruebas de `com.facimus.procesos.arquitectura`; depende del job anterior.
 3. `docker-build`: construye la imagen y la ejecuta brevemente; depende de los dos anteriores.
-4. `sonarqube`: `mvn verify sonar:sonar` con `-Dsonar.qualitygate.wait=true` contra SonarCloud (`sonar.projectKey=AndresContreras1_Backend-DW-BPMN`). Usa los secretos `SONAR_TOKEN` y `SONAR_HOST_URL`. Se exceptúan de cobertura y análisis `**/dto/**`, `**/config/**` y `*Application.java`. No corre en pull requests de forks.
+4. `sonarqube`: `mvn verify sonar:sonar` con `-Dsonar.qualitygate.wait=true` contra SonarCloud (`sonar.projectKey=AndresContreras1_Backend-DW-BPMN`). Usa el secreto `SONAR_TOKEN` (la URL de SonarCloud, la organización y el projectKey salen del `pom.xml`). Se exceptúan de cobertura y análisis `**/dto/**`, `**/config/**` y `*Application.java`. No corre en pull requests de forks.
 
 El repositorio no tiene un job de despliegue: el CI valida y construye, no publica la imagen.
 

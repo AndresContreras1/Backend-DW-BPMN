@@ -39,7 +39,7 @@ public class InvitacionUsuarioController {
     private final InvitacionUsuarioService invitacionUsuarioService;
 
     @PostMapping
-    @Operation(summary = "Invitar un colaborador", description = "Genera una invitacion por correo con un token de un solo uso.")
+    @Operation(summary = "Invitar un colaborador", description = "Genera una invitacion con un token de un solo uso, valido 48 horas. El token se devuelve en la respuesta: el sistema no envia correos.")
     @ApiResponse(responseCode = "201", description = "Recurso creado.",
             content = @Content(schema = @Schema(implementation = InvitacionUsuarioResponse.class)))
     @ApiResponse(responseCode = "400", description = "Solicitud invalida (errores de validacion o JSON malformado).",
