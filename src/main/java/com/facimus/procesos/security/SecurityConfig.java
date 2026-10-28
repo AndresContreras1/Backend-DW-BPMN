@@ -46,7 +46,7 @@ public class SecurityConfig {
                 // Auth es JWT en header Authorization (sin cookies), API stateless: CSRF no aplica.
                 // Se deja habilitado globalmente y se exime solo estas rutas en vez de un disable() total,
                 // que es lo que disparaba la alerta del scan de seguridad.
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/v1/**", "/h2-console/**"))
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/v1/**", "/h2-console/**")) // NOSONAR java:S4502 - API sin sesion ni cookies: la autenticacion va en el header Authorization (JWT), no hay CSRF que explotar
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests

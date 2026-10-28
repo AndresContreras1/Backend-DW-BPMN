@@ -10,6 +10,7 @@ import com.facimus.procesos.security.JwtService;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.authentication.BadCredentialsException;
 
+import java.util.UUID;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,14 +34,15 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     private static final String TIPO_TOKEN = "Bearer";
     private static final String CREDENCIALES_INVALIDAS = "Correo o contrasena incorrectos.";
-    /** Hash BCrypt precalculado de una clave que nadie usa: iguala el tiempo de respuesta cuando el correo no sirve. */
-    private static final String HASH_FICTICIO = "$2a$10$9gXDubFVHPZOG1sk665ql.Qiwrep1XCkebtnBCwlTnEvibos4UlY.";
 
     private final UsuarioRepository usuarioRepository;
     private final EmpresaService empresaService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final ModelMapper modelMapper;
+
+    /** Hash BCrypt de una clave aleatoria que nadie conoce: iguala el tiempo de respuesta cuando el correo no sirve. */
+    private String hashFicticio;
 
     @Transactional
     @Override
@@ -110,7 +112,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         Optional<Usuario> candidato = usuarioRepository.findByEmailIgnoreCase(email).filter(Usuario::isActivo);
         // Siempre se ejecuta un matches (contra un hash ficticio si no hay usuario valido) para que el tiempo
         // de respuesta no revele si el correo existe o esta inactivo.
-        String hash = candidato.map(Usuario::getPasswordHash).orElse(HASH_FICTICIO);
+        String hash = candidato.map(Usuario::getPasswordHash).orElseGet(this::hashFicticio);
         boolean coincide = passwordEncoder.matches(password, hash);
         if (candidato.isEmpty() || !coincide) {
             throw new ReglaNegocioException(CREDENCIALES_INVALIDAS);
@@ -195,5 +197,13 @@ public class UsuarioServiceImpl implements UsuarioService {
     public UsuarioResponse actualizar(Long empresaId, Long usuarioId, ActualizarUsuarioRequest request) {
         Usuario usuario = actualizar(empresaId, usuarioId, request.rolAcceso(), request.activo());
         return modelMapper.map(usuario, UsuarioResponse.class);
+    }
+
+    /** Se calcula una sola vez, la primera vez que hace falta, con una clave que no se guarda en ningun lado. */
+    private synchronized String hashFicticio() {
+        if (hashFicticio == null) {
+            hashFicticio = passwordEncoder.encode(UUID.randomUUID().toString());
+        }
+        return hashFicticio;
     }
 }

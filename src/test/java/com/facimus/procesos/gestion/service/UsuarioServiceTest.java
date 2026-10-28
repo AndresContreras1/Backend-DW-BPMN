@@ -216,12 +216,13 @@ class UsuarioServiceTest {
     @DisplayName("UsuarioServiceImpl_autenticar_correoInexistente_ejecutaMatchesContraHashFicticio")
     void UsuarioServiceImpl_autenticar_correoInexistente_ejecutaMatchesContraHashFicticio() {
         when(usuarioRepository.findByEmailIgnoreCase("nadie@acme.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(anyString())).thenReturn("hash-ficticio");
 
         ReglaNegocioException ex = assertThrows(ReglaNegocioException.class,
                 () -> usuarioService.autenticar("nadie@acme.com", "pass"));
 
         assertEquals("Correo o contrasena incorrectos.", ex.getMessage());
-        verify(passwordEncoder).matches(eq("pass"), startsWith("$2a$10$"));
+        verify(passwordEncoder).matches("pass", "hash-ficticio");
     }
 
     @Test
@@ -229,10 +230,11 @@ class UsuarioServiceTest {
     void UsuarioServiceImpl_autenticar_usuarioInactivo_ejecutaMatchesContraHashFicticio() {
         usuario.setActivo(false);
         when(usuarioRepository.findByEmailIgnoreCase("juan@acme.com")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.encode(anyString())).thenReturn("hash-ficticio");
 
         assertThrows(ReglaNegocioException.class, () -> usuarioService.autenticar("juan@acme.com", "pass"));
 
-        verify(passwordEncoder).matches(eq("pass"), startsWith("$2a$10$"));
+        verify(passwordEncoder).matches("pass", "hash-ficticio");
         verify(passwordEncoder, never()).matches("pass", "hashed");
     }
 
