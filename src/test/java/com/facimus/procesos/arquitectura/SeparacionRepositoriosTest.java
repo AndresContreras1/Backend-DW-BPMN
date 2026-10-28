@@ -18,7 +18,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
  * Verifica en el codigo las dos reglas de "refactor: ModelMapper y separacion de
- * repositorios" (PR #37, punto 4 de la review de Segiraldo0610): que ningun Service
+ * repositorios" (PR #37, punto 4 de la review): que ningun Service
  * inyecte el Repository de otro dominio, y que no existan ciclos de dependencia entre
  * Services.
  */

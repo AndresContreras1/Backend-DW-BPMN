@@ -1,7 +1,7 @@
 # Guía de sustentación — Facimus Procesos (Beta-back)
 
 > Documento de estudio generado a partir de la lectura completa del repositorio
-> `Facimus-Curiositatem/Beta-back` (rama `main`, commit `a4a1bb0`).
+> `AndresContreras1/Backend-DW-BPMN` (rama `main`).
 > Todo ejemplo de código aquí es **código real** del repositorio, con su ruta.
 
 ---
