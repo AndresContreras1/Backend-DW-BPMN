@@ -20,11 +20,11 @@ Se evaluaron **146 criterios de aceptación** de las 28 historias.
 | Estado | Criterios | Historias afectadas |
 |---|---|---|
 | ✅ Cumple | 121 | El backend implementa el criterio completo. |
-| 🟡 Parcial | 8 | HU-02, HU-03, HU-18, HU-19, HU-24, HU-25, HU-26, HU-27 (una fila cada una). |
-| ❌ Falta | 1 | HU-15 (advertencia de condiciones no mutuamente excluyentes). |
+| 🟡 Parcial | 9 | HU-02, HU-03, HU-15, HU-18, HU-19, HU-24, HU-25, HU-26, HU-27 (una fila cada una). |
+| ❌ Falta | 0 | Ningún criterio queda sin implementar. |
 | UI | 16 | Dibujo, confirmación previa y ocultar opciones: lo resuelve el frontend con lo que expone el backend. |
 
-Por historia: **19 historias** tienen todos sus criterios en ✅ o UI; **8** tienen al menos un criterio 🟡 y **1** (HU-15) tiene un criterio ❌.
+Por historia: **19 historias** tienen todos sus criterios en ✅ o UI y **9** tienen al menos un criterio 🟡.
 
 Distribución por bloque:
 
@@ -32,11 +32,11 @@ Distribución por bloque:
 |---|---|---|---|---|---|
 | Gestión de empresas y usuarios | HU-01 a HU-03 | 13 | 2 | 0 | 0 |
 | Gestión de procesos | HU-04 a HU-07 | 18 | 0 | 0 | 3 |
-| Modelado: actividades, arcos y gateways | HU-08 a HU-16 | 36 | 0 | 1 | 8 |
+| Modelado: actividades, arcos y gateways | HU-08 a HU-16 | 36 | 1 | 0 | 8 |
 | Roles de proceso | HU-17 a HU-20 | 17 | 2 | 0 | 1 |
 | Pools y lanes | HU-21 a HU-24 | 19 | 1 | 0 | 3 |
 | Mensajes y colaboración entre pools | HU-25 a HU-28 | 18 | 3 | 0 | 1 |
-| **Total** | **28 historias** | **121** | **8** | **1** | **16** |
+| **Total** | **28 historias** | **121** | **9** | **0** | **16** |
 
 ## Hallazgos transversales
 
@@ -268,7 +268,7 @@ Reglas añadidas en esta misma validación: un arco desde un gateway exclusivo o
 |---|---|---|---|
 | 1 | Se puede cambiar el tipo y el símbolo se actualiza | ✅ | El backend cambia y devuelve `tipoGateway`; el símbolo lo redibuja el frontend. Tests: [GatewayServiceTest][] › `cambiar_paralelo_a_exclusivo_con_condicion`, `cambiar_paralelo_a_inclusivo_sin_arcos`. |
 | 2 | Se pueden actualizar las condiciones de cada arco saliente | ✅ | `PUT /arcos/{id}` (ver HU-12). |
-| 3 | Al pasar a exclusivo, el editor advierte si las condiciones no son mutuamente excluyentes | ❌ | No existe esa comprobación: las condiciones son texto libre y el backend no las analiza. Lo único que se verifica al pasar de paralelo a exclusivo o inclusivo es que todos los arcos salientes tengan condición (409 si falta alguna, test `cambiar_paralelo_a_exclusivo_sin_condicion`); eso no equivale a comprobar la exclusión mutua. |
+| 3 | Al pasar a exclusivo, el editor advierte si las condiciones no son mutuamente excluyentes | 🟡 | `GET /api/v1/procesos/{id}/validacion` advierte cuando dos arcos salientes de un gateway exclusivo repiten la misma condición (se normalizan espacios y mayúsculas); `ValidacionModeloServiceImpl`, test `gateway_exclusivo_con_condiciones_repetidas_advierte_que_no_son_excluyentes`. Las condiciones son texto libre y el backend no evalúa su significado, así que condiciones distintas que puedan cumplirse a la vez no se detectan. |
 | 4 | Al pasar a paralelo se eliminan las condiciones | ✅ | Se borran las condiciones de los arcos salientes. Tests: [GatewayServiceTest][] › `cambiar_a_paralelo_limpia_condiciones`, [ModeladoBrechasIntegracionTest][] › `Gateway_editarAParalelo_limpiaLasCondicionesDeSusSalidas`. |
 | 5 | Los cambios quedan en el historial | ✅ | Registra nombre, tipo y número de condiciones eliminadas. Test: [GatewayServiceTest][] › `editar_describe_el_nombre_el_tipo_y_las_condiciones_eliminadas`. |
 
@@ -479,7 +479,7 @@ Lo que sigue es lo que el backend **no** hace o hace de forma parcial. Ninguna d
 6. **Cierre de sesión sin invalidación de token (HU-03).** `POST /auth/logout` no revoca el JWT; vale hasta expirar (1800 s por defecto).
 7. **Correo único en todo el sistema.** Una misma persona no puede pertenecer a dos empresas, porque el login pide solo correo y contraseña. Además, el registro de empresa, el alta de colaboradores y las invitaciones responden 409 cuando el correo ya existe, dato que el inicio de sesión sí oculta.
 8. **Compartir exige el id de la empresa invitada (HU-23).** No hay directorio ni búsqueda de empresas: quien comparte debe conocer el identificador numérico de la otra empresa.
-9. **Condiciones de arco en texto libre (HU-12, HU-15).** El backend exige que exista una condición, pero no la interpreta: no comprueba que las condiciones de un gateway exclusivo sean mutuamente excluyentes.
+9. **Condiciones de arco en texto libre (HU-12, HU-15).** El backend exige que exista una condición y advierte cuando un gateway exclusivo repite la misma condición en más de un arco saliente, pero no interpreta su significado: no puede probar que condiciones distintas sean mutuamente excluyentes.
 10. **Elementos propios del diagrama.** Solo existen eventos de mensaje (Throw y Catch): no hay eventos genéricos de inicio y fin. La validación de publicación no comprueba que todos los nodos sean alcanzables; las advertencias de elementos desconectados se calculan al eliminar (`impacto-eliminacion`), no en `/validacion`.
 11. **Roles de proceso e historial (HU-18, HU-19).** Las lanes de procesos dados de baja no impiden eliminar el rol, y el cambio de un rol solo se registra en el historial de los procesos que tienen lanes con ese rol.
 12. **Referencias a actividades eliminadas.** Eliminar una actividad que es la "actividad de error" de un mensaje no produce advertencia ni lo impide; la referencia queda apuntando a un nodo inactivo.
