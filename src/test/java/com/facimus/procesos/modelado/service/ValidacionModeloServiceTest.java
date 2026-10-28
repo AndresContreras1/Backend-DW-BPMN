@@ -123,6 +123,49 @@ class ValidacionModeloServiceTest {
     }
 
     @Test
+    void gateway_exclusivo_con_condiciones_repetidas_advierte_que_no_son_excluyentes() {
+        Gateway gateway = new Gateway();
+        gateway.setId(1L);
+        gateway.setNombre("Decision");
+        gateway.setTipoGateway(TipoGateway.EXCLUSIVO);
+        gateway.setActivo(true);
+
+        Actividad a = actividad(2L);
+        Actividad b = actividad(3L);
+        Arco ab = arco(11L, gateway, a, "Monto > 100");
+        Arco ac = arco(12L, gateway, b, "  monto   > 100 ");
+
+        when(poolService.listarPorProceso(1L, 10L)).thenReturn(List.of(pool));
+        when(laneService.listarPorProceso(1L, 10L)).thenReturn(List.of());
+        when(nodoFlujoService.listarActivosPorProceso(1L, 10L)).thenReturn(List.of(gateway, a, b));
+        when(arcoService.listarActivosPorProceso(1L, 10L)).thenReturn(List.of(ab, ac));
+
+        assertThat(service.obtenerAdvertencias(1L, 10L))
+                .anyMatch(texto -> texto.contains("no son mutuamente excluyentes") && texto.contains("monto > 100"));
+    }
+
+    @Test
+    void gateway_inclusivo_con_condiciones_repetidas_no_advierte_exclusion() {
+        Gateway gateway = new Gateway();
+        gateway.setId(1L);
+        gateway.setNombre("Decision");
+        gateway.setTipoGateway(TipoGateway.INCLUSIVO);
+        gateway.setActivo(true);
+
+        Actividad a = actividad(2L);
+        Actividad b = actividad(3L);
+        Arco ab = arco(11L, gateway, a, "x");
+        Arco ac = arco(12L, gateway, b, "x");
+
+        when(poolService.listarPorProceso(1L, 10L)).thenReturn(List.of(pool));
+        when(laneService.listarPorProceso(1L, 10L)).thenReturn(List.of());
+        when(nodoFlujoService.listarActivosPorProceso(1L, 10L)).thenReturn(List.of(gateway, a, b));
+        when(arcoService.listarActivosPorProceso(1L, 10L)).thenReturn(List.of(ab, ac));
+
+        assertThat(service.obtenerAdvertencias(1L, 10L)).noneMatch(texto -> texto.contains("mutuamente"));
+    }
+
+    @Test
     void catch_inicio_con_entrada_falla() {
         EventoMensaje evento = new EventoMensaje();
         evento.setId(5L);

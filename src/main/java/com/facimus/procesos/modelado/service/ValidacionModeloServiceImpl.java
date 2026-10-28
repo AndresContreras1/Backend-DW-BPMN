@@ -138,6 +138,17 @@ public class ValidacionModeloServiceImpl implements ValidacionModeloService {
                     advertencias.add("Todos los arcos salientes del gateway \"" + gateway.getNombre()
                             + "\" deben tener condicion.");
                 }
+                if (salientes.size() >= 2 && gateway.getTipoGateway() == TipoGateway.EXCLUSIVO) {
+                    Set<String> vistas = new HashSet<>();
+                    salientes.stream()
+                            .filter(arco -> StringUtils.hasText(arco.getCondicion()))
+                            .map(arco -> arco.getCondicion().trim().replaceAll("\s+", " ").toLowerCase())
+                            .filter(condicion -> !vistas.add(condicion))
+                            .distinct()
+                            .forEach(condicion -> advertencias.add("Las condiciones del gateway exclusivo \""
+                                    + gateway.getNombre() + "\" no son mutuamente excluyentes: la condicion \""
+                                    + condicion + "\" se repite en mas de un arco saliente."));
+                }
             }
 
             if (nodo instanceof EventoMensaje evento) {
