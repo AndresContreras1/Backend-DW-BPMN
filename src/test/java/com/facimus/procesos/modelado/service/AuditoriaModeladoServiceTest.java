@@ -30,7 +30,7 @@ class AuditoriaModeladoServiceTest {
     private HistorialCambioService historialCambioService;
 
     @InjectMocks
-    private AuditoriaModeladoService service;
+    private AuditoriaModeladoServiceImpl service;
 
     @AfterEach
     void limpiarContexto() {

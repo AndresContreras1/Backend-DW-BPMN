@@ -37,7 +37,7 @@ class CorrelacionServiceTest {
     private AuditoriaModeladoService auditoriaModeladoService;
 
     @InjectMocks
-    private CorrelacionService correlacionService;
+    private CorrelacionServiceImpl correlacionService;
 
     @Test
     void definir_crea_correlacion() {

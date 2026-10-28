@@ -38,7 +38,7 @@ class ActividadServiceTest {
     private AuditoriaModeladoService auditoriaModeladoService;
 
     @InjectMocks
-    private ActividadService actividadService;
+    private ActividadServiceImpl actividadService;
 
     private Empresa empresa;
     private Proceso proceso;

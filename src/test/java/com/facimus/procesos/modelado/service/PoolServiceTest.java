@@ -43,7 +43,7 @@ class PoolServiceTest {
     private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
-    private PoolService poolService;
+    private PoolServiceImpl poolService;
 
     private Empresa empresa;
     private Proceso proceso;

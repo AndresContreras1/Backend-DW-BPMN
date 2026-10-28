@@ -42,7 +42,7 @@ class ArcoServiceTest {
     private AuditoriaModeladoService auditoriaModeladoService;
 
     @InjectMocks
-    private ArcoService arcoService;
+    private ArcoServiceImpl arcoService;
 
     private Empresa empresa;
     private Pool pool;

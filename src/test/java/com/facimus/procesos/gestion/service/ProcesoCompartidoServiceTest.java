@@ -41,7 +41,7 @@ class ProcesoCompartidoServiceTest {
     @Mock private HistorialCambioService historialCambioService;
 
     @InjectMocks
-    private ProcesoCompartidoService service;
+    private ProcesoCompartidoServiceImpl service;
 
     private Empresa propietaria;
     private Empresa invitada;

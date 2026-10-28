@@ -40,7 +40,7 @@ class EmpresaOrquestadorServiceTest {
     private UsuarioService usuarioService;
 
     @InjectMocks
-    private EmpresaOrquestadorService empresaOrquestadorService;
+    private EmpresaOrquestadorServiceImpl empresaOrquestadorService;
 
     private Empresa empresa;
 

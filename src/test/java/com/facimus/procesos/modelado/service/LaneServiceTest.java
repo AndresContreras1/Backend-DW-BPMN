@@ -39,7 +39,7 @@ class LaneServiceTest {
     private AuditoriaModeladoService auditoriaModeladoService;
 
     @InjectMocks
-    private LaneService laneService;
+    private LaneServiceImpl laneService;
 
     private Pool pool;
     private Lane lane1;

@@ -37,7 +37,7 @@ class SeparacionRepositoriosTest {
      * NodoFlujoRepository es la unica excepcion documentada: por la herencia JPA
      * SINGLE_TABLE de NodoFlujo (Actividad, Gateway y EventoMensaje comparten tabla y
      * discriminador), varios services de "nodos" delegan sus consultas en
-     * NodoFlujoService en vez de tener cada uno su propia copia de esas queries. Ningun
+     * NodoFlujoServiceImpl en vez de tener cada uno su propia copia de esas queries. Ningun
      * otro Service debe inyectar ese Repository directamente.
      */
     @TestFactory
@@ -49,7 +49,7 @@ class SeparacionRepositoriosTest {
                 .<DynamicTest>map(repo -> {
                     String nombreRepo = repo.getSimpleName();
                     String nombreServiceDueno = nombreRepo.substring(0, nombreRepo.length() - "Repository".length())
-                            + "Service";
+                            + "ServiceImpl";
                     return DynamicTest.dynamicTest(nombreRepo + " -> solo " + nombreServiceDueno, () ->
                             noClasses()
                                     .that(DescribedPredicate.not(nombreSimpleEs(nombreServiceDueno)))

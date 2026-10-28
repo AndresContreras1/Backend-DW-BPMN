@@ -40,7 +40,7 @@ class ProcesoServiceTest {
     private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
-    private ProcesoService procesoService;
+    private ProcesoServiceImpl procesoService;
 
     private Empresa empresa;
     private Usuario usuario;

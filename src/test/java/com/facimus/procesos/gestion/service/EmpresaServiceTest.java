@@ -28,7 +28,7 @@ class EmpresaServiceTest {
     private EmpresaRepository empresaRepository;
 
     @InjectMocks
-    private EmpresaService empresaService;
+    private EmpresaServiceImpl empresaService;
 
     @Test
     @DisplayName("HU-01: registrar crea la empresa")

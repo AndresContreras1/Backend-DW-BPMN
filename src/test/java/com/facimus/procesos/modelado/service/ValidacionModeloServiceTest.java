@@ -29,7 +29,7 @@ class ValidacionModeloServiceTest {
     @Mock private CorrelacionService correlacionService;
 
     @InjectMocks
-    private ValidacionModeloService service;
+    private ValidacionModeloServiceImpl service;
 
     private Pool pool;
     private Lane lane;

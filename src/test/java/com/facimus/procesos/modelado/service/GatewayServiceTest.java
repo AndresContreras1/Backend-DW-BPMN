@@ -38,7 +38,7 @@ class GatewayServiceTest {
     private AuditoriaModeladoService auditoriaModeladoService;
 
     @InjectMocks
-    private GatewayService gatewayService;
+    private GatewayServiceImpl gatewayService;
 
     private Gateway gateway;
 

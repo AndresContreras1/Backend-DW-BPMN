@@ -43,7 +43,7 @@ class CorrelacionOrquestadorServiceTest {
     private CorrelacionService correlacionService;
 
     @InjectMocks
-    private CorrelacionOrquestadorService correlacionOrquestadorService;
+    private CorrelacionOrquestadorServiceImpl correlacionOrquestadorService;
 
     private Mensaje mensaje;
     private Correlacion correlacion;
