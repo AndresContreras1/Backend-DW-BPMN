@@ -1,5 +1,16 @@
 package com.facimus.procesos.gestion.service;
 
+import com.facimus.procesos.common.api.PageResponse;
+import com.facimus.procesos.gestion.controller.dto.CambiarEstadoProcesoRequest;
+import com.facimus.procesos.gestion.controller.dto.EditarProcesoRequest;
+import com.facimus.procesos.gestion.controller.dto.HistorialCambioResponse;
+import com.facimus.procesos.gestion.controller.dto.ProcesoDetalleResponse;
+import com.facimus.procesos.gestion.controller.dto.ProcesoResponse;
+import java.util.List;
+import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+
 import java.time.LocalDateTime;
 
 import org.springframework.context.ApplicationEventPublisher;
@@ -33,11 +44,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ProcesoServiceImpl implements ProcesoService {
 
+    private static final int TAMANO_PAGINA = 10;
+
     private final ProcesoRepository procesoRepository;
     private final EmpresaService empresaService;
     private final UsuarioService usuarioService;
     private final HistorialCambioService historialCambioService;
     private final ApplicationEventPublisher eventPublisher;
+    private final ModelMapper modelMapper;
 
     @Transactional
     @Override
@@ -149,5 +163,51 @@ public class ProcesoServiceImpl implements ProcesoService {
     public Proceso obtener(Long empresaId, Long procesoId) {
         return procesoRepository.findByIdAndEmpresaIdAndActivoTrue(procesoId, empresaId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Proceso no encontrado."));
+    }
+
+    @Transactional
+    @Override
+    public ProcesoResponse editarDatos(Long empresaId, Long procesoId, Long usuarioId, EditarProcesoRequest request) {
+        Proceso proceso = editarDatos(empresaId, procesoId, usuarioId, request.nombre(), request.descripcion(),
+                request.categoria());
+        return modelMapper.map(proceso, ProcesoResponse.class);
+    }
+
+    @Transactional
+    @Override
+    public ProcesoResponse cambiarEstado(Long empresaId, Long procesoId, Long usuarioId,
+            CambiarEstadoProcesoRequest request) {
+        Proceso proceso = cambiarEstado(empresaId, procesoId, usuarioId, request.estado());
+        return modelMapper.map(proceso, ProcesoResponse.class);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public PageResponse<ProcesoResponse> consultarPagina(Long empresaId, String nombre, EstadoProceso estado,
+            String categoria, Boolean activo, int pagina) {
+        Page<ProcesoResponse> procesos = buscar(empresaId, nombre, estado, categoria, activo,
+                PageRequest.of(pagina, TAMANO_PAGINA, Sort.by("fechaModificacion").descending()))
+                .map(p -> modelMapper.map(p, ProcesoResponse.class));
+        return PageResponse.from(procesos);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public ProcesoDetalleResponse consultarDetalle(Long empresaId, Long procesoId) {
+        Proceso proceso = obtener(empresaId, procesoId);
+        List<HistorialCambioResponse> historial = historialCambioService.listarPorProceso(empresaId, procesoId)
+                .stream()
+                .map(h -> modelMapper.map(h, HistorialCambioResponse.class))
+                .toList();
+        return new ProcesoDetalleResponse(modelMapper.map(proceso, ProcesoResponse.class), historial);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<HistorialCambioResponse> consultarHistorial(Long empresaId, Long procesoId) {
+        obtener(empresaId, procesoId);
+        return historialCambioService.listarPorProceso(empresaId, procesoId).stream()
+                .map(h -> modelMapper.map(h, HistorialCambioResponse.class))
+                .toList();
     }
 }

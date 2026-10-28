@@ -2,7 +2,6 @@ package com.facimus.procesos.gestion.controller;
 
 import java.util.List;
 
-import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
@@ -19,7 +18,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import com.facimus.procesos.gestion.controller.dto.CompartirProcesoRequest;
 import com.facimus.procesos.gestion.controller.dto.ProcesoCompartidoDetalleResponse;
 import com.facimus.procesos.gestion.controller.dto.ProcesoCompartidoResponse;
-import com.facimus.procesos.gestion.model.ProcesoCompartido;
 import com.facimus.procesos.gestion.service.ProcesoCompartidoService;
 import com.facimus.procesos.security.ApiPrincipal;
 
@@ -41,7 +39,6 @@ import lombok.RequiredArgsConstructor;
 public class ProcesoCompartidoController {
 
     private final ProcesoCompartidoService procesoCompartidoService;
-    private final ModelMapper modelMapper;
 
     @GetMapping("/procesos/{procesoId}/compartidos")
     @Operation(summary = "Listar con quien comparto un proceso", description = "Solo la empresa propietaria puede consultar esta lista.")
@@ -54,8 +51,7 @@ public class ProcesoCompartidoController {
     public ResponseEntity<List<ProcesoCompartidoResponse>> listarCompartidos(@PathVariable Long procesoId,
             @AuthenticationPrincipal ApiPrincipal principal) {
         return ResponseEntity.ok(procesoCompartidoService
-                .listarCompartidosPorPropietario(principal.empresaId(), procesoId).stream()
-                .map(c -> modelMapper.map(c, ProcesoCompartidoResponse.class)).toList());
+                .consultarCompartidosPorPropietario(principal.empresaId(), procesoId));
     }
 
     @PostMapping("/procesos/{procesoId}/compartidos")
@@ -75,11 +71,11 @@ public class ProcesoCompartidoController {
     public ResponseEntity<ProcesoCompartidoResponse> compartir(@PathVariable Long procesoId,
             @Validated @RequestBody CompartirProcesoRequest request,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        ProcesoCompartido compartido = procesoCompartidoService.compartir(principal.empresaId(),
-                principal.usuarioId(), procesoId, request.empresaInvitadaId());
+        ProcesoCompartidoResponse compartido = procesoCompartidoService.compartir(principal.empresaId(),
+                principal.usuarioId(), procesoId, request);
         return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentContextPath()
                         .path("/api/v1/procesos-compartidos/{id}").buildAndExpand(procesoId).toUri())
-                .body(modelMapper.map(compartido, ProcesoCompartidoResponse.class));
+                .body(compartido);
     }
 
     @DeleteMapping("/procesos/{procesoId}/compartidos/{empresaInvitadaId}")
@@ -107,8 +103,7 @@ public class ProcesoCompartidoController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<List<ProcesoCompartidoResponse>> listarRecibidos(
             @AuthenticationPrincipal ApiPrincipal principal) {
-        return ResponseEntity.ok(procesoCompartidoService.listarRecibidos(principal.empresaId()).stream()
-                .map(c -> modelMapper.map(c, ProcesoCompartidoResponse.class)).toList());
+        return ResponseEntity.ok(procesoCompartidoService.consultarRecibidos(principal.empresaId()));
     }
 
     @GetMapping("/procesos-compartidos/{procesoId}")
@@ -121,8 +116,6 @@ public class ProcesoCompartidoController {
             content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
     public ResponseEntity<ProcesoCompartidoDetalleResponse> detalleCompartido(@PathVariable Long procesoId,
             @AuthenticationPrincipal ApiPrincipal principal) {
-        return ResponseEntity.ok(modelMapper.map(
-                procesoCompartidoService.obtenerCompartido(principal.empresaId(), procesoId),
-                ProcesoCompartidoDetalleResponse.class));
+        return ResponseEntity.ok(procesoCompartidoService.consultarCompartido(principal.empresaId(), procesoId));
     }
 }

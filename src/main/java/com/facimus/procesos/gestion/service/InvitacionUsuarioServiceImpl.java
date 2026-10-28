@@ -1,5 +1,11 @@
 package com.facimus.procesos.gestion.service;
 
+import com.facimus.procesos.gestion.controller.dto.AceptarInvitacionRequest;
+import com.facimus.procesos.gestion.controller.dto.InvitacionUsuarioRequest;
+import com.facimus.procesos.gestion.controller.dto.InvitacionUsuarioResponse;
+import com.facimus.procesos.gestion.controller.dto.UsuarioResponse;
+import org.modelmapper.ModelMapper;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -24,6 +30,7 @@ public class InvitacionUsuarioServiceImpl implements InvitacionUsuarioService {
     private final InvitacionUsuarioRepository invitacionUsuarioRepository;
     private final EmpresaService empresaService;
     private final UsuarioService usuarioService;
+    private final ModelMapper modelMapper;
 
     @Transactional
     @Override
@@ -62,5 +69,19 @@ public class InvitacionUsuarioServiceImpl implements InvitacionUsuarioService {
         invitacion.setUsada(true);
         invitacionUsuarioRepository.save(invitacion);
         return usuario;
+    }
+
+    @Transactional
+    @Override
+    public InvitacionUsuarioResponse crear(Long empresaId, InvitacionUsuarioRequest request) {
+        InvitacionUsuario invitacion = crear(empresaId, request.email(), request.rolAcceso());
+        return modelMapper.map(invitacion, InvitacionUsuarioResponse.class);
+    }
+
+    @Transactional
+    @Override
+    public UsuarioResponse aceptar(String token, AceptarInvitacionRequest request) {
+        Usuario usuario = aceptar(token, request.nombre(), request.password());
+        return modelMapper.map(usuario, UsuarioResponse.class);
     }
 }

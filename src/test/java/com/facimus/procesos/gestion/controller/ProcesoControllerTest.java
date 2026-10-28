@@ -6,27 +6,25 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.facimus.procesos.gestion.model.Empresa;
+import com.facimus.procesos.common.api.PageResponse;
+import com.facimus.procesos.gestion.controller.dto.CambiarEstadoProcesoRequest;
+import com.facimus.procesos.gestion.controller.dto.EditarProcesoRequest;
+import com.facimus.procesos.gestion.controller.dto.ProcesoDetalleResponse;
+import com.facimus.procesos.gestion.controller.dto.ProcesoDiagramaResponse;
+import com.facimus.procesos.gestion.controller.dto.ProcesoRequest;
+import com.facimus.procesos.gestion.controller.dto.ProcesoResponse;
 import com.facimus.procesos.gestion.model.EstadoProceso;
-import com.facimus.procesos.gestion.model.Proceso;
 import com.facimus.procesos.gestion.model.RolAcceso;
-import com.facimus.procesos.gestion.service.HistorialCambioService;
 import com.facimus.procesos.gestion.service.ProcesoDiagramaService;
 import com.facimus.procesos.gestion.service.ProcesoOrquestadorService;
 import com.facimus.procesos.gestion.service.ProcesoService;
-import com.facimus.procesos.gestion.service.dto.ProcesoDiagrama;
 import static com.facimus.procesos.security.ApiPrincipalRequestPostProcessor.principal;
 
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
-
-import com.facimus.procesos.config.ModelMapperConfig;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
@@ -39,7 +37,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 @WebMvcTest(ProcesoController.class)
-@Import(ModelMapperConfig.class)
 class ProcesoControllerTest {
 
     @Autowired
@@ -52,17 +49,14 @@ class ProcesoControllerTest {
     private ProcesoOrquestadorService procesoOrquestadorService;
 
     @MockitoBean
-    private HistorialCambioService historialCambioService;
-
-    @MockitoBean
     private ProcesoDiagramaService procesoDiagramaService;
 
     @Test
     @DisplayName("GET /api/v1/procesos - listar procesos (200)")
     void listar_procesos() throws Exception {
-        Proceso p = crearProceso(1L, "Ventas");
-        Page<Proceso> page = new PageImpl<>(List.of(p));
-        given(procesoService.buscar(eq(1L), any(), any(), any(), any(), any())).willReturn(page);
+        ProcesoResponse p = crearProceso(1L, "Ventas", EstadoProceso.BORRADOR, true);
+        given(procesoService.consultarPagina(eq(1L), any(), any(), any(), any(), eq(0)))
+                .willReturn(new PageResponse<>(List.of(p), 0, 10, 1, 1));
 
         mockMvc.perform(get("/api/v1/procesos").with(principal(RolAcceso.EDITOR)))
                 .andExpect(status().isOk())
@@ -72,10 +66,9 @@ class ProcesoControllerTest {
     @Test
     @DisplayName("GET /api/v1/procesos?activo=false - filtro de inactivos acepta parametro (200)")
     void listar_procesos_inactivos() throws Exception {
-        Proceso p = crearProceso(1L, "Eliminado");
-        p.setActivo(false);
-        Page<Proceso> page = new PageImpl<>(List.of(p));
-        given(procesoService.buscar(eq(1L), any(), any(), any(), eq(false), any())).willReturn(page);
+        ProcesoResponse p = crearProceso(1L, "Eliminado", EstadoProceso.BORRADOR, false);
+        given(procesoService.consultarPagina(eq(1L), any(), any(), any(), eq(false), eq(0)))
+                .willReturn(new PageResponse<>(List.of(p), 0, 10, 1, 1));
 
         mockMvc.perform(get("/api/v1/procesos?activo=false").with(principal(RolAcceso.ADMINISTRADOR)))
                 .andExpect(status().isOk())
@@ -92,8 +85,8 @@ class ProcesoControllerTest {
     @Test
     @DisplayName("POST /api/v1/procesos - crear proceso como editor (201)")
     void crear_proceso() throws Exception {
-        Proceso p = crearProceso(2L, "Compras");
-        given(procesoOrquestadorService.crearConPoolInicial(eq(1L), eq(1L), anyString(), anyString(), anyString()))
+        ProcesoResponse p = crearProceso(2L, "Compras", EstadoProceso.BORRADOR, true);
+        given(procesoOrquestadorService.crearConPoolInicial(eq(1L), eq(1L), any(ProcesoRequest.class)))
                 .willReturn(p);
 
         mockMvc.perform(post("/api/v1/procesos")
@@ -106,7 +99,8 @@ class ProcesoControllerTest {
                 .andExpect(header().string("Location", "http://localhost/api/v1/procesos/2"))
                 .andExpect(jsonPath("$.nombre").value("Compras"));
 
-        verify(procesoOrquestadorService).crearConPoolInicial(eq(1L), eq(1L), anyString(), anyString(), anyString());
+        verify(procesoOrquestadorService).crearConPoolInicial(1L, 1L,
+                new ProcesoRequest("Compras", "Proceso de compras", "Operativo"));
     }
 
     @Test
@@ -124,9 +118,8 @@ class ProcesoControllerTest {
     @Test
     @DisplayName("GET /api/v1/procesos/{id} - detalle proceso (200)")
     void detalle_proceso() throws Exception {
-        Proceso p = crearProceso(1L, "Ventas");
-        given(procesoService.obtener(1L, 1L)).willReturn(p);
-        given(historialCambioService.listarPorProceso(1L, 1L)).willReturn(List.of());
+        ProcesoResponse p = crearProceso(1L, "Ventas", EstadoProceso.BORRADOR, true);
+        given(procesoService.consultarDetalle(1L, 1L)).willReturn(new ProcesoDetalleResponse(p, List.of()));
 
         mockMvc.perform(get("/api/v1/procesos/1").with(principal(RolAcceso.EDITOR)))
                 .andExpect(status().isOk())
@@ -137,8 +130,8 @@ class ProcesoControllerTest {
     @Test
     @DisplayName("PUT /api/v1/procesos/{id} - editar proceso (200)")
     void editar_proceso() throws Exception {
-        Proceso p = crearProceso(1L, "Ventas v2");
-        given(procesoService.editarDatos(eq(1L), eq(1L), eq(1L), anyString(), anyString(), anyString()))
+        ProcesoResponse p = crearProceso(1L, "Ventas v2", EstadoProceso.BORRADOR, true);
+        given(procesoService.editarDatos(eq(1L), eq(1L), eq(1L), any(EditarProcesoRequest.class)))
                 .willReturn(p);
 
         mockMvc.perform(put("/api/v1/procesos/1")
@@ -154,9 +147,9 @@ class ProcesoControllerTest {
     @Test
     @DisplayName("PATCH /api/v1/procesos/{id}/publicar - publicar proceso (200)")
     void publicar_proceso() throws Exception {
-        Proceso p = crearProceso(1L, "Ventas");
-        p.setEstado(EstadoProceso.PUBLICADO);
-        given(procesoService.cambiarEstado(1L, 1L, 1L, EstadoProceso.PUBLICADO)).willReturn(p);
+        ProcesoResponse p = crearProceso(1L, "Ventas", EstadoProceso.PUBLICADO, true);
+        given(procesoService.cambiarEstado(1L, 1L, 1L, new CambiarEstadoProcesoRequest(EstadoProceso.PUBLICADO)))
+                .willReturn(p);
         mockMvc.perform(patch("/api/v1/procesos/1")
                 .with(principal(RolAcceso.EDITOR))
                 .contentType(MediaType.APPLICATION_JSON)
@@ -166,15 +159,15 @@ class ProcesoControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value("PUBLICADO"));
 
-        verify(procesoService).cambiarEstado(1L, 1L, 1L, EstadoProceso.PUBLICADO);
+        verify(procesoService).cambiarEstado(1L, 1L, 1L, new CambiarEstadoProcesoRequest(EstadoProceso.PUBLICADO));
     }
 
 
     @Test
     void obtener_diagrama_retorna_200() throws Exception {
-        Proceso proceso = crearProceso(1L, "Ventas");
-        given(procesoDiagramaService.obtener(1L, 1L))
-                .willReturn(new ProcesoDiagrama(proceso, List.of(), List.of(), List.of(),
+        ProcesoResponse proceso = crearProceso(1L, "Ventas", EstadoProceso.BORRADOR, true);
+        given(procesoDiagramaService.consultarDiagrama(1L, 1L))
+                .willReturn(new ProcesoDiagramaResponse(proceso, List.of(), List.of(), List.of(),
                         List.of(), List.of(), List.of(), List.of()));
 
         mockMvc.perform(get("/api/v1/procesos/1/diagrama")
@@ -186,8 +179,7 @@ class ProcesoControllerTest {
 
     @Test
     void consultar_historial_separado() throws Exception {
-        given(procesoService.obtener(1L, 1L)).willReturn(crearProceso(1L, "Ventas"));
-        given(historialCambioService.listarPorProceso(1L, 1L)).willReturn(List.of());
+        given(procesoService.consultarHistorial(1L, 1L)).willReturn(List.of());
 
         mockMvc.perform(get("/api/v1/procesos/1/historial").with(principal(RolAcceso.SOLO_LECTURA)))
                 .andExpect(status().isOk())
@@ -243,22 +235,9 @@ class ProcesoControllerTest {
                 .andExpect(jsonPath("$.title").isNotEmpty());
     }
 
-    private Proceso crearProceso(Long id, String nombre) {
-        Empresa empresa = new Empresa();
-        empresa.setId(1L);
-        empresa.setNombre("Acme");
-
-        Proceso p = new Proceso();
-        p.setId(id);
-        p.setNombre(nombre);
-        p.setDescripcion("Descripcion");
-        p.setCategoria("Operativo");
-        p.setEstado(EstadoProceso.BORRADOR);
-        p.setActivo(true);
-        p.setEmpresa(empresa);
-        p.setFechaCreacion(LocalDateTime.now());
-        p.setFechaModificacion(LocalDateTime.now());
-        return p;
+    private ProcesoResponse crearProceso(Long id, String nombre, EstadoProceso estado, boolean activo) {
+        return new ProcesoResponse(id, nombre, "Descripcion", "Operativo", estado, activo,
+                LocalDateTime.now(), LocalDateTime.now());
     }
 
 }

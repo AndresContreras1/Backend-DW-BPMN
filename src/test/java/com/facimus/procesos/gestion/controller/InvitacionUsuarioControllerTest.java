@@ -11,20 +11,18 @@ import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.facimus.procesos.config.ModelMapperConfig;
-import com.facimus.procesos.gestion.model.Empresa;
-import com.facimus.procesos.gestion.model.InvitacionUsuario;
+import com.facimus.procesos.gestion.controller.dto.AceptarInvitacionRequest;
+import com.facimus.procesos.gestion.controller.dto.InvitacionUsuarioRequest;
+import com.facimus.procesos.gestion.controller.dto.InvitacionUsuarioResponse;
+import com.facimus.procesos.gestion.controller.dto.UsuarioResponse;
 import com.facimus.procesos.gestion.model.RolAcceso;
-import com.facimus.procesos.gestion.model.Usuario;
 import com.facimus.procesos.gestion.service.InvitacionUsuarioService;
 
 @WebMvcTest(InvitacionUsuarioController.class)
-@Import(ModelMapperConfig.class)
 class InvitacionUsuarioControllerTest {
 
     @Autowired MockMvc mockMvc;
@@ -32,16 +30,11 @@ class InvitacionUsuarioControllerTest {
 
     @Test
     void crear_invitacion_retorna_201() throws Exception {
-        Empresa empresa = new Empresa(); empresa.setId(1L);
-        InvitacionUsuario invitacion = new InvitacionUsuario();
-        invitacion.setId(7L);
-        invitacion.setEmpresa(empresa);
-        invitacion.setEmail("nuevo@demo.com");
-        invitacion.setRolAcceso(RolAcceso.EDITOR);
-        invitacion.setToken("abc");
-        invitacion.setFechaExpiracion(LocalDateTime.now().plusHours(48));
+        InvitacionUsuarioResponse invitacion = new InvitacionUsuarioResponse(7L, "nuevo@demo.com",
+                RolAcceso.EDITOR, "abc", LocalDateTime.now().plusHours(48));
 
-        given(service.crear(1L, "nuevo@demo.com", RolAcceso.EDITOR)).willReturn(invitacion);
+        given(service.crear(1L, new InvitacionUsuarioRequest("nuevo@demo.com", RolAcceso.EDITOR)))
+                .willReturn(invitacion);
 
         mockMvc.perform(post("/api/v1/usuarios/invitaciones")
                 .with(principal(RolAcceso.ADMINISTRADOR))
@@ -57,14 +50,9 @@ class InvitacionUsuarioControllerTest {
 
     @Test
     void aceptar_invitacion_es_publico_y_retorna_200() throws Exception {
-        Usuario usuario = new Usuario();
-        usuario.setId(3L);
-        usuario.setNombre("Ana");
-        usuario.setEmail("ana@demo.com");
-        usuario.setRolAcceso(RolAcceso.EDITOR);
-        usuario.setActivo(true);
+        UsuarioResponse usuario = new UsuarioResponse(3L, "Ana", "ana@demo.com", RolAcceso.EDITOR, true);
 
-        given(service.aceptar(eq("token-ok"), eq("Ana"), anyString())).willReturn(usuario);
+        given(service.aceptar(eq("token-ok"), any(AceptarInvitacionRequest.class))).willReturn(usuario);
 
         mockMvc.perform(post("/api/v1/usuarios/invitaciones/token-ok/aceptar")
                 .contentType(MediaType.APPLICATION_JSON)

@@ -1,5 +1,15 @@
 package com.facimus.procesos.gestion.service;
 
+import com.facimus.procesos.gestion.controller.dto.ActualizarUsuarioRequest;
+import com.facimus.procesos.gestion.controller.dto.CrearUsuarioRequest;
+import com.facimus.procesos.gestion.controller.dto.LoginRequest;
+import com.facimus.procesos.gestion.controller.dto.LoginResponse;
+import com.facimus.procesos.gestion.controller.dto.UsuarioResponse;
+import com.facimus.procesos.security.ApiPrincipal;
+import com.facimus.procesos.security.JwtService;
+import org.modelmapper.ModelMapper;
+import org.springframework.security.authentication.BadCredentialsException;
+
 import java.util.List;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,11 +30,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class UsuarioServiceImpl implements UsuarioService {
 
+    private static final String TIPO_TOKEN = "Bearer";
     private static final String CREDENCIALES_INVALIDAS = "Correo o contrasena incorrectos.";
 
     private final UsuarioRepository usuarioRepository;
     private final EmpresaService empresaService;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+    private final ModelMapper modelMapper;
 
     @Transactional
     @Override
@@ -107,5 +120,50 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     public java.util.Optional<Usuario> buscar(Long empresaId, Long usuarioId) {
         return usuarioRepository.findByIdAndEmpresaId(usuarioId, empresaId);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public LoginResponse autenticar(LoginRequest request) {
+        Usuario usuario;
+        try {
+            usuario = autenticar(request.email(), request.password());
+        } catch (ReglaNegocioException e) {
+            // Sin la causa a proposito: Spring MVC buscaria un handler para ella y responderia 409.
+            // Asi lo resuelve JwtAuthEntryPoint con 401 y el mismo mensaje generico, exista o no el correo (HU-03).
+            throw new BadCredentialsException(e.getMessage());
+        }
+        String token = jwtService.generarToken(ApiPrincipal.of(usuario));
+        return new LoginResponse(token, TIPO_TOKEN, jwtService.getExpirationSeconds(),
+                modelMapper.map(usuario, UsuarioResponse.class));
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<UsuarioResponse> consultarPorEmpresa(Long empresaId) {
+        return listarPorEmpresa(empresaId).stream()
+                .map(u -> modelMapper.map(u, UsuarioResponse.class))
+                .toList();
+    }
+
+    @Transactional
+    @Override
+    public UsuarioResponse crearColaborador(Long empresaId, CrearUsuarioRequest request) {
+        Usuario usuario = crearColaborador(empresaId, request.nombre(), request.email(), request.password(),
+                request.rolAcceso());
+        return modelMapper.map(usuario, UsuarioResponse.class);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public UsuarioResponse consultarDetalle(Long empresaId, Long usuarioId) {
+        return modelMapper.map(obtener(empresaId, usuarioId), UsuarioResponse.class);
+    }
+
+    @Transactional
+    @Override
+    public UsuarioResponse actualizar(Long empresaId, Long usuarioId, ActualizarUsuarioRequest request) {
+        Usuario usuario = actualizar(empresaId, usuarioId, request.rolAcceso(), request.activo());
+        return modelMapper.map(usuario, UsuarioResponse.class);
     }
 }
